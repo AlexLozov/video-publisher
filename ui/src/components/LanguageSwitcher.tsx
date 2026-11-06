@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
-import { SUPPORTED_LANGUAGES, setLanguage, type Language } from "../i18n";
+import { SUPPORTED_LANGUAGES, type Language } from "../i18n";
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ onChange }: { onChange: (lng: Language) => void }) {
   const { t, i18n } = useTranslation();
   const current = i18n.resolvedLanguage as Language;
 
@@ -21,7 +21,7 @@ export function LanguageSwitcher() {
             lang={lng}
             aria-pressed={active}
             title={t(`language.${lng}`)}
-            onClick={() => void setLanguage(lng)}
+            onClick={() => onChange(lng)}
             className={
               active
                 ? "rounded-md bg-slate-900 px-2.5 py-1 font-medium text-white"
