@@ -11,14 +11,19 @@ import socket
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 import uvicorn
 import webview
+from webview.dom import DOMEventHandler
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "core"))
+sys.path.insert(0, str(ROOT / "desktop"))
 
+from bridge import DesktopApi, make_drop_handler  # noqa: E402
 from video_publisher.api import create_app  # noqa: E402
 from video_publisher.config import get_settings  # noqa: E402
 
@@ -58,8 +63,24 @@ def main() -> None:
     port = find_free_port(host)
     server = start_server(host, port)
 
-    webview.create_window("Video Publisher", f"http://{host}:{port}/", width=1100, height=760)
-    webview.start()
+    api = DesktopApi(open_dialog_type=webview.OPEN_DIALOG)
+    window = webview.create_window(
+        "Video Publisher", f"http://{host}:{port}/", width=1100, height=820, js_api=api
+    )
+    assert window is not None
+    api.attach(window)
+
+    def bind_drag_and_drop(win: webview.Window) -> None:
+        # Prevent the browser from opening the dropped file; read its full path instead.
+        swallow = DOMEventHandler(lambda _e: None, prevent_default=True, stop_propagation=True)
+        on_drop = DOMEventHandler(
+            make_drop_handler(win), prevent_default=True, stop_propagation=True
+        )
+        events = win.dom.document.events
+        events.dragover += cast(Callable[..., Any], swallow)
+        events.drop += cast(Callable[..., Any], on_drop)
+
+    webview.start(bind_drag_and_drop, (window,))
 
     server.should_exit = True
 
