@@ -3,6 +3,11 @@
     "title": "Video Publisher",
     "subtitle": "Публикация одного видео сразу в несколько соцсетей"
   },
+  "nav": {
+    "label": "Разделы",
+    "home": "Главная",
+    "settings": "Настройки"
+  },
   "language": {
     "label": "Язык интерфейса",
     "ru": "Русский",
@@ -27,12 +32,62 @@
     "facebook": "Страница Facebook",
     "telegram": "Telegram"
   },
+  "common": {
+    "save": "Сохранить",
+    "saving": "Сохраняем…",
+    "saved": "Сохранено",
+    "delete": "Удалить",
+    "loading": "Загрузка…"
+  },
+  "settings": {
+    "title": "Настройки",
+    "loadFailed": "Не удалось загрузить настройки",
+    "general": "Общие",
+    "telegram": {
+      "title": "Telegram",
+      "mode": "Способ публикации",
+      "modeBot": "Бот",
+      "modeBotHint": "Публикует приложение. В момент публикации компьютер должен быть включён или в спящем режиме. Видео до 50 МБ.",
+      "modeAccount": "Мой аккаунт",
+      "modeAccountHint": "Отложенные посты хранит Telegram — они выйдут, даже если компьютер выключен. Видео до 2 ГБ.",
+      "channel": "Канал",
+      "channelHint": "@имя_канала или числовой id вида -1001234567890",
+      "botToken": "Токен бота",
+      "botTokenHint": "Получите у @BotFather. Бот должен быть администратором канала.",
+      "apiId": "api_id",
+      "apiHash": "api_hash",
+      "apiHint": "Получите на my.telegram.org → API development tools.",
+      "session": "Вход в аккаунт",
+      "sessionActive": "выполнен",
+      "sessionMissing": "не выполнен — вход появится вместе с публикацией через аккаунт"
+    }
+  },
+  "secret": {
+    "set": "задан",
+    "notSet": "не задан",
+    "placeholderNew": "Вставьте значение",
+    "placeholderReplace": "Вставьте новое значение, чтобы заменить",
+    "storedSafely": "Хранится в Диспетчере учётных данных Windows"
+  },
+  "fieldErrors": {
+    "invalid_channel": "Укажите @имя_канала или id вида -100…",
+    "greater_than": "Значение должно быть больше нуля",
+    "int_parsing": "Введите целое число",
+    "literal_error": "Недопустимое значение",
+    "enum": "Недопустимое значение",
+    "string_too_short": "Поле не может быть пустым",
+    "default": "Неверное значение"
+  },
   "errors": {
     "not_found": "Не найдено",
     "method_not_allowed": "Действие не поддерживается",
     "http_error": "Ошибка запроса к серверу",
     "validation_error": "Неверные данные в запросе",
     "internal_error": "Внутренняя ошибка сервера",
+    "invalid_bot_token": "Это не похоже на токен бота. Формат: 123456789:AA…",
+    "invalid_api_hash": "api_hash — это 32 символа из цифр и букв a–f",
+    "secret_store_unavailable": "Хранилище секретов Windows недоступно",
+    "network": "Нет связи с сервером",
     "unknown": "Неизвестная ошибка"
   }
 }

@@ -71,9 +71,18 @@ describe("locale files", () => {
       "http_error",
       "validation_error",
       "internal_error",
+      "invalid_bot_token",
+      "invalid_api_hash",
+      "secret_store_unavailable",
     ];
     for (const code of backendCodes) {
       expect(Object.keys(reference)).toContain(`errors.${code}`);
+    }
+  });
+
+  it("has a message for every field error code the settings form can get", () => {
+    for (const code of ["invalid_channel", "greater_than", "int_parsing", "literal_error", "enum", "string_too_short", "default"]) {
+      expect(Object.keys(reference)).toContain(`fieldErrors.${code}`);
     }
   });
 

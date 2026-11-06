@@ -15,8 +15,8 @@ export type Language = keyof typeof resources;
 export const SUPPORTED_LANGUAGES = Object.keys(resources) as Language[];
 export const DEFAULT_LANGUAGE: Language = "ru";
 
-// The choice is kept in localStorage for now.
-// TODO: move it to backend settings once the storage layer exists.
+// The source of truth is the backend settings (`language`). localStorage is only a local
+// cache so the first paint already uses the right language before /api/settings answers.
 export const STORAGE_KEY = "vp.language";
 
 export function isLanguage(value: unknown): value is Language {

@@ -3,6 +3,11 @@
     "title": "Video Publisher",
     "subtitle": "Publish one video to several social networks at once"
   },
+  "nav": {
+    "label": "Sections",
+    "home": "Home",
+    "settings": "Settings"
+  },
   "language": {
     "label": "Interface language",
     "ru": "Русский",
@@ -27,12 +32,62 @@
     "facebook": "Facebook Page",
     "telegram": "Telegram"
   },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "delete": "Delete",
+    "loading": "Loading…"
+  },
+  "settings": {
+    "title": "Settings",
+    "loadFailed": "Could not load settings",
+    "general": "General",
+    "telegram": {
+      "title": "Telegram",
+      "mode": "Publishing method",
+      "modeBot": "Bot",
+      "modeBotHint": "The app publishes the post. The computer must be on or asleep at publish time. Videos up to 50 MB.",
+      "modeAccount": "My account",
+      "modeAccountHint": "Telegram stores scheduled posts — they go out even if the computer is off. Videos up to 2 GB.",
+      "channel": "Channel",
+      "channelHint": "@channel_name or a numeric id like -1001234567890",
+      "botToken": "Bot token",
+      "botTokenHint": "Get it from @BotFather. The bot must be an admin of the channel.",
+      "apiId": "api_id",
+      "apiHash": "api_hash",
+      "apiHint": "Get them at my.telegram.org → API development tools.",
+      "session": "Account sign-in",
+      "sessionActive": "signed in",
+      "sessionMissing": "not signed in — sign-in arrives with account publishing"
+    }
+  },
+  "secret": {
+    "set": "set",
+    "notSet": "not set",
+    "placeholderNew": "Paste the value",
+    "placeholderReplace": "Paste a new value to replace it",
+    "storedSafely": "Stored in Windows Credential Manager"
+  },
+  "fieldErrors": {
+    "invalid_channel": "Use @channel_name or an id like -100…",
+    "greater_than": "Value must be greater than zero",
+    "int_parsing": "Enter a whole number",
+    "literal_error": "Value is not allowed",
+    "enum": "Value is not allowed",
+    "string_too_short": "Field cannot be empty",
+    "default": "Invalid value"
+  },
   "errors": {
     "not_found": "Not found",
     "method_not_allowed": "Action is not supported",
     "http_error": "Server request failed",
     "validation_error": "Invalid request data",
     "internal_error": "Internal server error",
+    "invalid_bot_token": "This does not look like a bot token. Format: 123456789:AA…",
+    "invalid_api_hash": "api_hash is 32 characters of digits and letters a–f",
+    "secret_store_unavailable": "Windows secret storage is unavailable",
+    "network": "No connection to the server",
     "unknown": "Unknown error"
   }
 }
