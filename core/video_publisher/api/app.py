@@ -1,5 +1,7 @@
 """FastAPI application factory."""
 
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -8,11 +10,13 @@ from pydantic import BaseModel
 
 from video_publisher import __version__
 from video_publisher.api.errors import install_error_handlers
+from video_publisher.api.publication_routes import router as publication_router
 from video_publisher.api.settings_routes import router as settings_router
 from video_publisher.config import get_settings
 from video_publisher.domain import Platform
 from video_publisher.platforms import PlatformRegistry
 from video_publisher.platforms import registry as default_registry
+from video_publisher.publishing import PublishingService
 from video_publisher.user_settings import SettingsService, build_settings_service
 
 
@@ -32,19 +36,36 @@ def create_app(
     ui_dist_dir: Path | None = None,
     platform_registry: PlatformRegistry | None = None,
     settings_service: SettingsService | None = None,
+    publishing_service: PublishingService | None = None,
 ) -> FastAPI:
     """Build the API app. If ``ui_dist_dir`` exists, the built UI is served at ``/``.
 
-    Without an explicit ``settings_service`` the database in ``VP_DATA_DIR`` is migrated
-    and used.
+    Without explicit services the database in ``VP_DATA_DIR`` is migrated and used, and
+    uploads interrupted by a previous run are marked as failed.
     """
     reg = default_registry if platform_registry is None else platform_registry
-    app = FastAPI(title="Video Publisher", version=__version__)
+    # Resources created here are released when the app shuts down.
+    closers: list[Callable[[], None]] = []
+    if settings_service is None:
+        settings_service = build_settings_service(get_settings())
+        closers.append(settings_service.close)
+    if publishing_service is None:
+        publishing_service = PublishingService(settings_service.session_factory, settings_service)
+        publishing_service.recover_interrupted()
+        closers.insert(0, publishing_service.shutdown)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        for close in closers:
+            close()
+
+    app = FastAPI(title="Video Publisher", version=__version__, lifespan=lifespan)
     install_error_handlers(app)
-    app.state.settings_service = (
-        build_settings_service(get_settings()) if settings_service is None else settings_service
-    )
+    app.state.settings_service = settings_service
+    app.state.publishing_service = publishing_service
     app.include_router(settings_router)
+    app.include_router(publication_router)
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:

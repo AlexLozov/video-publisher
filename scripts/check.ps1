@@ -23,7 +23,7 @@ function Step([string]$name, [string]$dir, [scriptblock]$cmd) {
 Step "ruff check"        $root { & $py -m ruff check . }
 Step "ruff format"       $root { & $py -m ruff format --check . }
 Step "mypy"              $root { & $py -m mypy }
-Step "mypy desktop"      $root { & $py -m mypy --strict desktop\run.py }
+Step "mypy desktop"      $root { & $py -m mypy --strict desktop\run.py desktop\bridge.py }
 Step "pytest + coverage" $root { & $py -m pytest }
 $ui = Join-Path $root "ui"
 Step "ui typecheck"      $ui { npm run typecheck }

@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import { fetchSettings, patchSettings, type Settings } from "./api";
 import { HomePage } from "./components/HomePage";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
+import { PublishPage } from "./components/PublishPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { errorKey } from "./errors";
 import i18n, { setLanguage, type Language } from "./i18n";
 
-type Page = "home" | "settings";
+type Page = "home" | "publish" | "settings";
 
 export default function App() {
   const { t } = useTranslation();
@@ -48,7 +49,7 @@ export default function App() {
         </header>
 
         <nav aria-label={t("nav.label")} className="mb-6 flex gap-1 border-b border-slate-200">
-          {(["home", "settings"] as const).map((p) => (
+          {(["home", "publish", "settings"] as const).map((p) => (
             <button
               key={p}
               type="button"
@@ -67,6 +68,8 @@ export default function App() {
 
         {page === "home" ? (
           <HomePage />
+        ) : page === "publish" ? (
+          <PublishPage settings={settings} onOpenSettings={() => setPage("settings")} />
         ) : (
           <SettingsPage
             settings={settings}

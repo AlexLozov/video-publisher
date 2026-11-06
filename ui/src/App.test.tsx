@@ -11,6 +11,7 @@ const ok = (settings = makeSettings()) =>
   mockFetch({
     "/api/health": HEALTH_OK,
     "/api/platforms": PLATFORMS,
+    "GET /api/publications?limit=20": { body: [] },
     "GET /api/settings": { body: settings },
     "PATCH /api/settings": ({ body }) => ({
       body: { ...settings, ...(body as object) },
@@ -166,13 +167,17 @@ describe("language", () => {
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe("ru");
   });
 
-  it.each(["home", "settings"] as const)(
+  it.each(["home", "publish", "settings"] as const)(
     "leaves no Russian text on the %s screen in English (no hardcoded strings)",
     async (page) => {
       ok(makeSettings({ language: "en" }));
       await setLanguage("en");
       const { container } = render(<App />);
       await screen.findByText("Server is running · v1.2.3");
+      if (page === "publish") {
+        await userEvent.click(screen.getByRole("button", { name: "Publish" }));
+        await screen.findByText("Nothing published yet");
+      }
       if (page === "settings") {
         await userEvent.click(screen.getByRole("button", { name: "Settings" }));
         await screen.findByRole("heading", { name: "Telegram" });
