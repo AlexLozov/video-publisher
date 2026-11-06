@@ -8,11 +8,18 @@
 - **config** — параметры запуска через pydantic-settings: папка данных, порт и т. п. Задаются переменными окружения с префиксом `VP_` или файлом `.env`.
 - **storage** — база SQLite (`%USERPROFILE%\.video-publisher\app.db`) через SQLAlchemy. Структуру базы ведут миграции Alembic (`storage/migrations/versions`). При каждом запуске приложение доводит базу до последней версии, данные сохраняются. Новая таблица или колонка = новая миграция.
 - **user_settings** — настройки, которые пользователь меняет в приложении: язык, способ публикации в Telegram, канал, api_id. Хранятся в базе.
-- **auth** — секреты (токены, api_hash, сессии) хранятся в Диспетчере учётных данных Windows через `keyring`, а не в базе и не в файлах. API их только принимает (`PUT /api/secrets/{name}`) и сообщает, задан секрет или нет. Обратно значение не отдаёт никогда. В тестах и e2e используется хранилище в памяти (`VP_SECRET_BACKEND=memory`). Позже здесь же будут OAuth-авторизация и вход в аккаунты.
+- **auth** — секреты (токены, api_hash, сессии) хранятся в Диспетчере учётных данных Windows через `keyring`, а не в базе и не в файлах. API их только принимает (`PUT /api/secrets/{name}`) и сообщает, задан секрет или нет. Обратно значение не отдаёт никогда. В тестах и e2e используется хранилище в памяти (`VP_SECRET_BACKEND=memory`). Здесь же вход в Telegram-аккаунт (`auth/telegram_login.py`): телефон → код → пароль двухэтапной проверки, если он включён. Готовая сессия Telethon (`StringSession`) хранится в keyring как `telegram_session`, файлов `.session` на диске нет. Незавершённый вход живёт только в памяти. Номер, код и пароль не сохраняются. Позже здесь будет OAuth-авторизация других площадок.
 
 ## adapters — адаптеры платформ (`core/video_publisher/platforms/`)
 
 У каждой соцсети свой адаптер: наследник `PlatformAdapter` с методами `authenticate`, `validate`, `publish` и `schedule`. Свойство `supports_native_scheduling` показывает, умеет ли платформа сама откладывать публикацию. Адаптеры регистрируются в `PlatformRegistry`. Так остальной код не знает деталей конкретных API.
+
+У Telegram два адаптера, способ выбирается в настройках:
+
+- `telegram_bot.py` — Bot API через httpx, видео до 50 МБ, без отложенных постов.
+- `telegram_account.py` — аккаунт пользователя через Telethon (MTProto), видео до 2 ГБ. Отложенные посты хранит сам Telegram (`schedule_date`, до 365 дней вперёд). Файл сначала загружается (`upload_file`), потом публикуется (`send_file`). Обрыв связи при загрузке — обычная ошибка сети. Обрыв при публикации — `telegram_timeout_uncertain`, без автоповтора, чтобы не было дубля. Если сессию завершили на другом устройстве, она удаляется, и настройки просят войти заново.
+
+Общие части Telethon лежат в `telegram_mtproto.py`: фабрика клиента и перевод ошибок в коды. В тестах вместо Telethon подставляется фейковый клиент (`tests/fake_telegram_account.py`). Проверка времени публикации общая для всех площадок — `platforms/scheduling.py`.
 
 ## scheduler — планировщик (`core/video_publisher/scheduler/`)
 
@@ -20,7 +27,7 @@
 
 ## api — HTTP API (`core/video_publisher/api/`)
 
-Приложение на FastAPI, через которое с ядром общается интерфейс. Сейчас есть `GET /api/health`, `GET /api/platforms`, `GET/PATCH /api/settings` и `PUT/DELETE /api/secrets/{name}`. Ошибки проверки данных приходят как `{"code": "validation_error", "params": {"fields": {"body.telegram.channel": "invalid_channel"}}}`. В десктоп-режиме API заодно отдаёт собранный интерфейс как статику.
+Приложение на FastAPI, через которое с ядром общается интерфейс. Сейчас есть `GET /api/health`, `GET /api/platforms`, `GET/PATCH /api/settings`, `PUT/DELETE /api/secrets/{name}`, публикации (`POST/GET /api/publications`, необязательное поле `scheduled_at` с часовым поясом) и вход в Telegram-аккаунт (`GET /api/telegram/account`, `POST …/send-code`, `…/sign-in`, `…/password`, `…/cancel`, `…/logout`). Ошибки проверки данных приходят как `{"code": "validation_error", "params": {"fields": {"body.telegram.channel": "invalid_channel"}}}`. В десктоп-режиме API заодно отдаёт собранный интерфейс как статику.
 
 ## ui — интерфейс (`ui/`)
 
