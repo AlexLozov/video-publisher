@@ -114,8 +114,9 @@ class TelegramAccountAdapter(PlatformAdapter):
 
     # --- helpers --------------------------------------------------------------------
 
-    def _client(self) -> AccountClient:
-        return self._factory(self._session, self._api_id, self._api_hash)
+    def _client(self) -> Callable[[], AccountClient]:
+        """The client is built inside the event loop that ``run`` starts."""
+        return lambda: self._factory(self._session, self._api_id, self._api_hash)
 
     def _fail(self, err: PublishError) -> PublishError:
         if err.code == "telegram_session_expired" and self._on_session_invalid is not None:
@@ -149,9 +150,10 @@ class TelegramAccountAdapter(PlatformAdapter):
 
     def authenticate(self) -> None:
         """Check that the stored login still works."""
-        client = self._client()
+        make = self._client()
 
         async def go() -> None:
+            client = make()
             try:
                 await self._connect(client)
             finally:
@@ -208,9 +210,10 @@ class TelegramAccountAdapter(PlatformAdapter):
                     supports_streaming=True,
                 )
             )
-        client = self._client()
+        make = self._client()
 
         async def go() -> int:
+            client = make()
             try:
                 await self._connect(client)
                 entity = await self._resolve(client)

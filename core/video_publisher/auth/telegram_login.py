@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import re
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -127,9 +128,10 @@ class TelegramLoginService:
         assert api_id is not None and api_hash is not None
         return api_id, api_hash
 
-    def _client(self, session: str) -> AccountClient:
+    def _client(self, session: str) -> Callable[[], AccountClient]:
+        """Check the API keys now; the client itself is built inside the event loop."""
         api_id, api_hash = self._credentials()
-        return self._factory(session, api_id, api_hash)
+        return lambda: self._factory(session, api_id, api_hash)
 
     # --- steps ------------------------------------------------------------------------
 
@@ -138,9 +140,10 @@ class TelegramLoginService:
             if self._settings.get_secret(SecretName.TELEGRAM_SESSION):
                 raise PublishError("telegram_already_logged_in")
             phone = normalize_phone(raw_phone)
-            client = self._client("")
+            make = self._client("")
 
             async def go() -> tuple[str, str]:
+                client = make()
                 try:
                     await client.connect()
                     sent = await client.send_code_request(phone)
@@ -163,9 +166,10 @@ class TelegramLoginService:
             code = re.sub(r"\s", "", raw_code)
             if not _CODE_RE.match(code):
                 raise PublishError("telegram_code_invalid")
-            client = self._client(pending.session)
+            make = self._client(pending.session)
 
             async def go() -> tuple[bool, str]:
+                client = make()
                 try:
                     await client.connect()
                     try:
@@ -199,9 +203,10 @@ class TelegramLoginService:
                 raise PublishError("telegram_login_not_started")
             if not password or len(password) > MAX_PASSWORD:
                 raise PublishError("telegram_password_invalid")
-            client = self._client(pending.session)
+            make = self._client(pending.session)
 
             async def go() -> str:
+                client = make()
                 try:
                     await client.connect()
                     await client.sign_in(password=password)
@@ -236,9 +241,10 @@ class TelegramLoginService:
             session = self._settings.get_secret(SecretName.TELEGRAM_SESSION)
             if session:
                 with contextlib.suppress(Exception):  # remote logout is best effort
-                    client = self._client(session)
+                    make = self._client(session)
 
                     async def go() -> None:
+                        client = make()
                         try:
                             await client.connect()
                             await client.log_out()
