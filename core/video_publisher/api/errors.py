@@ -4,12 +4,13 @@ The backend never returns user-facing text: the UI looks up ``errors.<code>`` in
 files and may substitute ``params`` into the message.
 """
 
+from collections.abc import Sequence
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
@@ -34,6 +35,22 @@ HTTP_STATUS_CODES: dict[int, str] = {
 }
 
 
+def field_codes(errors: Sequence[Any]) -> dict[str, str]:
+    """Map each invalid field path to an error code the UI can translate.
+
+    Validators raise ``ValueError("<code>")``; other errors use pydantic's type
+    (``int_parsing``, ``greater_than``, ``literal_error``...).
+    """
+    result: dict[str, str] = {}
+    for err in errors:
+        path = ".".join(str(p) for p in err["loc"])
+        if err["type"] == "value_error" and "error" in err.get("ctx", {}):
+            result[path] = str(err["ctx"]["error"])
+        else:
+            result[path] = str(err["type"])
+    return result
+
+
 def _response(status_code: int, code: str, params: dict[str, Any] | None = None) -> JSONResponse:
     body = ErrorResponse(code=code, params=params or {})
     return JSONResponse(status_code=status_code, content=body.model_dump())
@@ -50,8 +67,11 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        fields = [".".join(str(p) for p in err["loc"]) for err in exc.errors()]
-        return _response(422, "validation_error", {"fields": fields})
+        return _response(422, "validation_error", {"fields": field_codes(exc.errors())})
+
+    @app.exception_handler(ValidationError)
+    async def handle_model_validation_error(_: Request, exc: ValidationError) -> JSONResponse:
+        return _response(422, "validation_error", {"fields": field_codes(exc.errors())})
 
     @app.exception_handler(Exception)
     async def handle_unexpected(_: Request, __: Exception) -> JSONResponse:

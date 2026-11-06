@@ -32,7 +32,10 @@ def test_api_error_returns_code_and_params() -> None:
 def test_validation_error_returns_code_and_fields() -> None:
     resp = make_client().get("/typed/abc")
     assert resp.status_code == 422
-    assert resp.json() == {"code": "validation_error", "params": {"fields": ["path.n"]}}
+    assert resp.json() == {
+        "code": "validation_error",
+        "params": {"fields": {"path.n": "int_parsing"}},
+    }
 
 
 def test_method_not_allowed_returns_code() -> None:
