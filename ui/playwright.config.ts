@@ -1,3 +1,4 @@
+import os from "node:os";
 import path from "node:path";
 
 import { defineConfig, devices } from "@playwright/test";
@@ -8,10 +9,15 @@ const repoRoot = path.resolve(import.meta.dirname, "..");
 const python =
   process.env.VP_PYTHON ??
   path.join(repoRoot, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
+// Fresh database per run; secrets stay in memory so the real Windows Credential Manager is
+// never touched.
+const dataDir = path.join(os.tmpdir(), `video-publisher-e2e-${process.pid}-${Date.now()}`);
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  // Tests share one backend (one database), so they run one at a time and reset state first.
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: "list",
   use: {
@@ -22,7 +28,11 @@ export default defineConfig({
   webServer: {
     command: `"${python}" -m uvicorn video_publisher.api.app:create_app_from_settings --factory --host 127.0.0.1 --port ${PORT}`,
     cwd: repoRoot,
-    env: { VP_UI_DIST_DIR: path.join(repoRoot, "ui", "dist") },
+    env: {
+      VP_UI_DIST_DIR: path.join(repoRoot, "ui", "dist"),
+      VP_DATA_DIR: dataDir,
+      VP_SECRET_BACKEND: "memory",
+    },
     url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 30_000,

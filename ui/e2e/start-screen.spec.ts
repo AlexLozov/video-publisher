@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { resetBackend } from "./helpers";
+
 const SCREENS = {
   ru: {
     status: /Сервер работает · v\d+\.\d+\.\d+/,
@@ -30,6 +32,10 @@ async function expectScreen(page: Page, lng: keyof typeof SCREENS) {
     "true",
   );
 }
+
+test.beforeEach(async ({ request }) => {
+  await resetBackend(request);
+});
 
 test("opens in Russian by default with backend status and all platforms", async ({ page }) => {
   await page.goto("/");
