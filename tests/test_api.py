@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from fakes import FakeTelegram
 from video_publisher import __version__
 from video_publisher.api import create_app
 from video_publisher.api.app import create_app_from_settings
@@ -37,16 +38,32 @@ def test_factory_reads_ui_dir_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert client.get("/").text == "from env"
 
 
-def test_unknown_api_route_returns_404() -> None:
+def test_unknown_api_route_returns_error_code() -> None:
     client = TestClient(create_app(platform_registry=PlatformRegistry()))
-    assert client.get("/api/nope").status_code == 404
+    resp = client.get("/api/nope")
+    assert resp.status_code == 404
+    assert resp.json() == {"code": "not_found", "params": {}}
 
 
 def test_platforms_lists_all_enum_members() -> None:
     client = TestClient(create_app(platform_registry=PlatformRegistry()))
     resp = client.get("/api/platforms")
     assert resp.status_code == 200
-    data = resp.json()
-    assert [p["id"] for p in data] == ["youtube", "tiktok", "instagram", "facebook", "telegram"]
-    assert all(p["available"] is False for p in data)
-    assert data[0]["name"] == "YouTube / Shorts"
+    assert resp.json() == [
+        {"id": p, "available": False}
+        for p in ["youtube", "tiktok", "instagram", "facebook", "telegram"]
+    ]
+
+
+def test_platforms_marks_registered_adapters_available() -> None:
+    reg = PlatformRegistry()
+    reg.register(FakeTelegram)
+    data = TestClient(create_app(platform_registry=reg)).get("/api/platforms").json()
+    assert {p["id"]: p["available"] for p in data}["telegram"] is True
+    assert sum(p["available"] for p in data) == 1
+
+
+def test_platforms_response_has_no_display_text() -> None:
+    """User-facing names are translated in the UI, so the API must not send them."""
+    data = TestClient(create_app(platform_registry=PlatformRegistry())).get("/api/platforms").json()
+    assert all(set(p) == {"id", "available"} for p in data)

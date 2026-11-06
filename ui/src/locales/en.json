@@ -1,0 +1,38 @@
+{
+  "app": {
+    "title": "Video Publisher",
+    "subtitle": "Publish one video to several social networks at once"
+  },
+  "language": {
+    "label": "Interface language",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "status": {
+    "heading": "Status",
+    "checking": "Checking the server…",
+    "ok": "Server is running · v{{version}}",
+    "down": "Server is unavailable"
+  },
+  "platforms": {
+    "heading": "Platforms",
+    "empty": "Platform list is unavailable",
+    "available": "connected",
+    "inDevelopment": "in development"
+  },
+  "platform": {
+    "youtube": "YouTube / Shorts",
+    "tiktok": "TikTok",
+    "instagram": "Instagram",
+    "facebook": "Facebook Page",
+    "telegram": "Telegram"
+  },
+  "errors": {
+    "not_found": "Not found",
+    "method_not_allowed": "Action is not supported",
+    "http_error": "Server request failed",
+    "validation_error": "Invalid request data",
+    "internal_error": "Internal server error",
+    "unknown": "Unknown error"
+  }
+}
