@@ -92,6 +92,36 @@ async function request<T>(path: string, init?: { method?: string; body?: unknown
   return (await resp.json()) as T;
 }
 
+export type PublicationStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
+
+export interface Publication {
+  id: string;
+  platform: string;
+  method: string;
+  target: string | null;
+  video_path: string;
+  title: string;
+  status: PublicationStatus;
+  url: string | null;
+  error_code: string | null;
+  error_params: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublishRequest {
+  video_path: string;
+  platform: string;
+  title: string;
+  description: string;
+  hashtags: string[];
+}
+
+export const startPublication = (req: PublishRequest) =>
+  request<Publication>("/api/publications", { method: "POST", body: req });
+export const fetchPublications = (limit = 20) =>
+  request<Publication[]>(`/api/publications?limit=${limit}`);
+
 export const fetchHealth = () => request<Health>("/api/health");
 export const fetchPlatforms = () => request<PlatformInfo[]>("/api/platforms");
 export const fetchSettings = () => request<Settings>("/api/settings");

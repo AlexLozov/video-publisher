@@ -6,6 +6,7 @@
   "nav": {
     "label": "Sections",
     "home": "Home",
+    "publish": "Publish",
     "settings": "Settings"
   },
   "language": {
@@ -88,6 +89,56 @@
     "invalid_api_hash": "api_hash is 32 characters of digits and letters a–f",
     "secret_store_unavailable": "Windows secret storage is unavailable",
     "network": "No connection to the server",
+    "video_not_found": "File not found. It may have been moved or deleted.",
+    "telegram_unsupported_format": "An MP4 file is required. Convert the video to MP4 and try again.",
+    "telegram_bot_file_too_large": "The file is larger than 50 MB, which bots cannot send. Choose “My account” in settings (up to 2 GB).",
+    "caption_too_long": "The caption is longer than {{max}} characters ({{length}}). Please shorten it.",
+    "telegram_invalid_token": "Telegram rejected the bot token. Check it in settings.",
+    "telegram_chat_not_found": "Channel not found. Check the channel name in settings and that the bot was added to it.",
+    "telegram_bot_not_admin": "The bot cannot post to the channel. Make it an admin with the “Post messages” right.",
+    "telegram_rejected": "Telegram rejected the publication.",
+    "telegram_rate_limited": "Telegram asks to wait {{retry_after}} s. Please try later.",
+    "telegram_unavailable": "Telegram is unavailable right now. Please try later.",
+    "telegram_timeout_uncertain": "The connection dropped during upload. Check the channel: the post may have gone out. It was not retried automatically to avoid a duplicate.",
+    "telegram_bot_no_native_scheduling": "Bots cannot schedule posts natively in Telegram.",
+    "network_error": "No internet connection or Telegram is unreachable.",
+    "telegram_not_configured": "Telegram is not set up: enter the channel and bot token in settings.",
+    "telegram_account_not_available": "Publishing via “My account” arrives in the next version. For now choose “Bot” in settings.",
+    "platform_not_supported": "This platform is not supported yet.",
+    "interrupted": "The app was closed during upload. Check the channel: the post may have gone out.",
+    "publication_not_found": "Publication not found.",
     "unknown": "Unknown error"
+  },
+  "publish": {
+    "title": "New publication",
+    "video": "Video",
+    "pick": "Choose video…",
+    "change": "Choose another…",
+    "dropHint": "Drop a video onto the window or choose a file",
+    "pathLabel": "Video file path",
+    "pathHint": "In browser dev mode, enter the full path to a file on this computer.",
+    "formatHint": "For Telegram via bot: MP4 up to 50 MB.",
+    "titleLabel": "Title",
+    "descriptionLabel": "Text",
+    "hashtagsLabel": "Hashtags",
+    "captionCounter": "Caption: {{count}} / {{max}} characters",
+    "destination": "Destination",
+    "notConfigured": "The Telegram bot is not set up.",
+    "openSettings": "Open settings",
+    "publishNow": "Publish now",
+    "starting": "Starting…"
+  },
+  "publications": {
+    "title": "Publications",
+    "empty": "Nothing published yet",
+    "loadFailed": "Could not load publications",
+    "openPost": "Open post",
+    "status": {
+      "draft": "draft",
+      "scheduled": "scheduled",
+      "publishing": "publishing…",
+      "published": "published",
+      "failed": "failed"
+    }
   }
 }
