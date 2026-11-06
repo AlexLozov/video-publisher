@@ -1,0 +1,86 @@
+import { useEffect, useState } from "react";
+
+import { fetchHealth, fetchPlatforms, type Health, type PlatformInfo } from "./api";
+
+type Status =
+  | { kind: "loading" }
+  | { kind: "ok"; health: Health }
+  | { kind: "error"; message: string };
+
+export default function App() {
+  const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const [platforms, setPlatforms] = useState<PlatformInfo[]>([]);
+
+  useEffect(() => {
+    fetchHealth()
+      .then((health) => setStatus({ kind: "ok", health }))
+      .catch((err: unknown) => setStatus({ kind: "error", message: String(err) }));
+    fetchPlatforms()
+      .then(setPlatforms)
+      .catch(() => setPlatforms([]));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <main className="mx-auto max-w-2xl px-6 py-12">
+        <header className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight">Video Publisher</h1>
+          <p className="mt-1 text-slate-500">
+            Публикация одного видео сразу в несколько соцсетей
+          </p>
+        </header>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Состояние</h2>
+            <BackendBadge status={status} />
+          </div>
+
+          <h3 className="mt-6 mb-3 text-sm font-medium uppercase tracking-wide text-slate-400">
+            Платформы
+          </h3>
+          {platforms.length === 0 ? (
+            <p className="text-sm text-slate-400">Список платформ недоступен</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {platforms.map((p) => (
+                <li key={p.id} className="flex items-center justify-between py-3">
+                  <span>{p.name}</span>
+                  <span
+                    className={
+                      p.available
+                        ? "rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700"
+                        : "rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500"
+                    }
+                  >
+                    {p.available ? "подключено" : "в разработке"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function BackendBadge({ status }: { status: Status }) {
+  if (status.kind === "loading") {
+    return <span className="text-sm text-slate-400">Проверяем сервер…</span>;
+  }
+  if (status.kind === "error") {
+    return (
+      <span className="flex items-center gap-2 text-sm text-rose-600" title={status.message}>
+        <span className="h-2 w-2 rounded-full bg-rose-500" />
+        Сервер недоступен
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-2 text-sm text-emerald-700">
+      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+      Сервер работает · v{status.health.version}
+    </span>
+  );
+}
