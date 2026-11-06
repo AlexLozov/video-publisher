@@ -5,6 +5,7 @@ import { ApiError, patchSettings, type SecretName, type Settings, type TelegramM
 import { errorKey } from "../errors";
 import { SUPPORTED_LANGUAGES, type Language } from "../i18n";
 import { SecretField } from "./SecretField";
+import { TelegramLogin } from "./TelegramLogin";
 
 interface Props {
   settings: Settings | null;
@@ -216,18 +217,16 @@ function TelegramSection({
             <SecretField
               name="telegram_api_hash"
               label={t("settings.telegram.apiHash")}
-              hint={t("settings.telegram.apiHint")}
               isSet={settings.secrets.telegram_api_hash}
               onChange={(isSet) => onSecret("telegram_api_hash", isSet)}
             />
-            <p className="text-sm">
-              <span className="font-medium">{t("settings.telegram.session")}: </span>
-              <span data-testid="telegram-session-status" className="text-slate-500">
-                {settings.secrets.telegram_session
-                  ? t("settings.telegram.sessionActive")
-                  : t("settings.telegram.sessionMissing")}
-              </span>
-            </p>
+            <div className="border-t border-slate-100 pt-4">
+              <TelegramLogin
+                keysReady={tg.api_id !== null && settings.secrets.telegram_api_hash}
+                sessionSet={settings.secrets.telegram_session}
+                onSessionChange={(isSet) => onSecret("telegram_session", isSet)}
+              />
+            </div>
           </div>
         )}
       </div>
