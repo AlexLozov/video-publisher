@@ -51,6 +51,10 @@ class SettingsService:
         self._sessions = session_factory
         self._secrets = secrets
 
+    @property
+    def session_factory(self) -> sessionmaker[Session]:
+        return self._sessions
+
     # --- settings -------------------------------------------------------------------
 
     def get(self) -> AppSettings:
