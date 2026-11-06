@@ -7,6 +7,7 @@ from video_publisher.publishing.service import (
     PublishingService,
     PublishRequest,
     default_adapter_factory,
+    make_adapter_factory,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "PublishRequest",
     "PublishingService",
     "default_adapter_factory",
+    "make_adapter_factory",
 ]
