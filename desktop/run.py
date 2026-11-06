@@ -1,0 +1,68 @@
+"""Desktop entry point: runs the API in a background thread and opens a pywebview window.
+
+Usage (from the repository root, after ``npm run build`` in ``ui/``)::
+
+    python desktop/run.py
+"""
+
+from __future__ import annotations
+
+import socket
+import sys
+import threading
+import time
+from pathlib import Path
+
+import uvicorn
+import webview
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "core"))
+
+from video_publisher.api import create_app  # noqa: E402
+from video_publisher.config import get_settings  # noqa: E402
+
+UI_DIST = ROOT / "ui" / "dist"
+
+
+def find_free_port(host: str) -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        port: int = sock.getsockname()[1]
+        return port
+
+
+def start_server(host: str, port: int) -> uvicorn.Server:
+    settings = get_settings()
+    ui_dir = settings.ui_dist_dir or UI_DIST
+    app = create_app(ui_dist_dir=ui_dir)
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+
+    deadline = time.monotonic() + 10
+    while not server.started:
+        if time.monotonic() > deadline:
+            raise RuntimeError("API server did not start within 10 seconds")
+        time.sleep(0.05)
+    return server
+
+
+def main() -> None:
+    if not (UI_DIST / "index.html").is_file():
+        print(f"UI is not built: {UI_DIST} is missing. Run `npm run build` in ui/ first.")
+        sys.exit(1)
+
+    host = "127.0.0.1"
+    port = find_free_port(host)
+    server = start_server(host, port)
+
+    webview.create_window("Video Publisher", f"http://{host}:{port}/", width=1100, height=760)
+    webview.start()
+
+    server.should_exit = True
+
+
+if __name__ == "__main__":
+    main()

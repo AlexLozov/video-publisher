@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from video_publisher import __version__
@@ -10,6 +12,13 @@ def test_health() -> None:
     resp = client.get("/api/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok", "version": __version__}
+
+
+def test_serves_built_ui_when_dist_exists(tmp_path: Path) -> None:
+    (tmp_path / "index.html").write_text("<h1>ui</h1>", encoding="utf-8")
+    client = TestClient(create_app(ui_dist_dir=tmp_path, platform_registry=PlatformRegistry()))
+    assert client.get("/").text == "<h1>ui</h1>"
+    assert client.get("/api/health").status_code == 200
 
 
 def test_platforms_lists_all_enum_members() -> None:
