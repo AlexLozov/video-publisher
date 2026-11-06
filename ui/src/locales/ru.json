@@ -1,0 +1,38 @@
+{
+  "app": {
+    "title": "Video Publisher",
+    "subtitle": "Публикация одного видео сразу в несколько соцсетей"
+  },
+  "language": {
+    "label": "Язык интерфейса",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "status": {
+    "heading": "Состояние",
+    "checking": "Проверяем сервер…",
+    "ok": "Сервер работает · v{{version}}",
+    "down": "Сервер недоступен"
+  },
+  "platforms": {
+    "heading": "Платформы",
+    "empty": "Список платформ недоступен",
+    "available": "подключено",
+    "inDevelopment": "в разработке"
+  },
+  "platform": {
+    "youtube": "YouTube / Shorts",
+    "tiktok": "TikTok",
+    "instagram": "Instagram",
+    "facebook": "Страница Facebook",
+    "telegram": "Telegram"
+  },
+  "errors": {
+    "not_found": "Не найдено",
+    "method_not_allowed": "Действие не поддерживается",
+    "http_error": "Ошибка запроса к серверу",
+    "validation_error": "Неверные данные в запросе",
+    "internal_error": "Внутренняя ошибка сервера",
+    "unknown": "Неизвестная ошибка"
+  }
+}
