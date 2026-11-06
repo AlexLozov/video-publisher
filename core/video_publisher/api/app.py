@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from video_publisher import __version__
+from video_publisher.config import get_settings
 from video_publisher.domain import Platform
 from video_publisher.platforms import PlatformRegistry
 from video_publisher.platforms import registry as default_registry
@@ -55,3 +56,8 @@ def create_app(
         app.mount("/", StaticFiles(directory=ui_dist_dir, html=True), name="ui")
 
     return app
+
+
+def create_app_from_settings() -> FastAPI:
+    """Factory for ``uvicorn --factory``: takes the UI directory from settings (VP_UI_DIST_DIR)."""
+    return create_app(ui_dist_dir=get_settings().ui_dist_dir)
