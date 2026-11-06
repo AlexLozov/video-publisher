@@ -4,7 +4,7 @@
 
 > Правило разработки: каждая фича и каждый баг — в отдельной ветке.
 
-Устройство проекта описано в [docs/architecture.md](docs/architecture.md).
+Устройство проекта описано в [docs/architecture.md](docs/architecture.md), правила — в [docs/rules.md](docs/rules.md), текущее состояние и план — в [docs/STATUS.md](docs/STATUS.md).
 
 ## Что нужно установить
 
