@@ -25,6 +25,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "respx>=0.21",
+    "python-multipart>=0.0.9",  # fake Telegram server in E2E tests
     "ruff>=0.6",
     "mypy>=1.11",
 ]

@@ -27,6 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from video_publisher.auth.secret_store import SecretName
+from video_publisher.config import get_settings
 from video_publisher.domain import (
     Platform,
     PostFormat,
@@ -113,7 +114,8 @@ def default_adapter_factory(platform: Platform, settings: SettingsService) -> Bu
     if missing:
         raise PublishError("telegram_not_configured", missing=missing)
     assert token is not None and tg.channel is not None
-    return BuiltAdapter(TelegramBotAdapter(token, tg.channel), TelegramMode.BOT.value, tg.channel)
+    adapter = TelegramBotAdapter(token, tg.channel, base_url=get_settings().telegram_api_base)
+    return BuiltAdapter(adapter, TelegramMode.BOT.value, tg.channel)
 
 
 def _clean_hashtags(tags: list[str]) -> list[str]:

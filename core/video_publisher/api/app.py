@@ -1,5 +1,7 @@
 """FastAPI application factory."""
 
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -42,13 +44,24 @@ def create_app(
     uploads interrupted by a previous run are marked as failed.
     """
     reg = default_registry if platform_registry is None else platform_registry
-    app = FastAPI(title="Video Publisher", version=__version__)
-    install_error_handlers(app)
+    # Resources created here are released when the app shuts down.
+    closers: list[Callable[[], None]] = []
     if settings_service is None:
         settings_service = build_settings_service(get_settings())
+        closers.append(settings_service.close)
     if publishing_service is None:
         publishing_service = PublishingService(settings_service.session_factory, settings_service)
         publishing_service.recover_interrupted()
+        closers.insert(0, publishing_service.shutdown)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        for close in closers:
+            close()
+
+    app = FastAPI(title="Video Publisher", version=__version__, lifespan=lifespan)
+    install_error_handlers(app)
     app.state.settings_service = settings_service
     app.state.publishing_service = publishing_service
     app.include_router(settings_router)

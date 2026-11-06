@@ -433,13 +433,14 @@ def test_app_marks_interrupted_uploads_on_start(
     stuck = make_service(settings_service, FakeAdapter(), executor).start(request(video))
     # A fresh app with default publishing service runs the recovery.
     app = create_app(platform_registry=PlatformRegistry(), settings_service=settings_service)
-    resp = TestClient(app).get(f"/api/publications/{stuck.id}")
+    with TestClient(app) as client:
+        resp = client.get(f"/api/publications/{stuck.id}")
     assert resp.json()["error_code"] == "interrupted"
 
 
 def test_platforms_endpoint_marks_telegram_available() -> None:
-    app = create_app()
-    data = TestClient(app).get("/api/platforms").json()
+    with TestClient(create_app()) as client:
+        data = client.get("/api/platforms").json()
     assert {p["id"]: p["available"] for p in data} == {
         "youtube": False,
         "tiktok": False,

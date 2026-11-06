@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     ui_dist_dir: Path | None = None
     # "memory" keeps secrets in RAM only; used by tests and E2E runs, never in the real app.
     secret_backend: Literal["keyring", "memory"] = "keyring"
+    # Overridden only by E2E tests, which point it at a local fake Telegram server.
+    telegram_api_base: str = "https://api.telegram.org"
 
     @property
     def database_url(self) -> str:

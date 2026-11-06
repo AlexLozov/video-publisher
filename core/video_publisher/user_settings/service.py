@@ -55,6 +55,12 @@ class SettingsService:
     def session_factory(self) -> sessionmaker[Session]:
         return self._sessions
 
+    def close(self) -> None:
+        """Close all database connections (on app shutdown)."""
+        engine = self._sessions.kw.get("bind")
+        if engine is not None:
+            engine.dispose()
+
     # --- settings -------------------------------------------------------------------
 
     def get(self) -> AppSettings:
