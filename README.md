@@ -50,8 +50,20 @@ python desktop/run.py
 
 ## Проверки
 
+Правила тестирования описаны в [docs/rules.md](docs/rules.md). Один раз установите браузер для e2e-тестов:
+
 ```bash
-pytest
-ruff check .
-mypy
+cd ui && npm run e2e:install
 ```
+
+Все проверки сразу (ruff, mypy, pytest с покрытием, Vitest с покрытием, сборка интерфейса, Playwright) запускаются одной командой из корня репозитория:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\check.ps1
+```
+
+Флаг `-SkipE2E` пропускает браузерные тесты. Отдельные проверки:
+
+- Python: `pytest` (покрытие ядра — не ниже 85%), `ruff check .`, `mypy`.
+- Интерфейс (в `ui/`): `npm test`, `npm run test:coverage`, `npm run e2e`.
+- Интеграционные тесты с реальными API: `pytest -m integration` (по умолчанию не запускаются).
