@@ -1,7 +1,7 @@
 """Abstract interface every platform adapter implements."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import ClassVar
 
 from pydantic import BaseModel, Field
@@ -28,6 +28,8 @@ class PlatformAdapter(ABC):
 
     platform: ClassVar[Platform]
     supported_formats: ClassVar[tuple[PostFormat, ...]] = ()
+    # How far ahead ``schedule`` accepts a time (only used with native scheduling).
+    max_schedule_ahead: ClassVar[timedelta] = timedelta(0)
 
     @property
     @abstractmethod

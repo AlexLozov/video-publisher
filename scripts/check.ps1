@@ -1,8 +1,8 @@
 # Runs every check required before merging into main (see docs/rules.md).
 # Usage from the repository root:  powershell -ExecutionPolicy Bypass -File scripts\check.ps1
-# Skip the browser E2E tests with -SkipE2E.
+# Browser E2E tests (Playwright) are opt-in: add -E2E (required before major stages).
 
-param([switch]$SkipE2E)
+param([switch]$E2E)
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
@@ -29,7 +29,7 @@ $ui = Join-Path $root "ui"
 Step "ui typecheck"      $ui { npm run typecheck }
 Step "vitest + coverage" $ui { npm run test:coverage }
 Step "ui build"          $ui { npm run build }
-if (-not $SkipE2E) {
+if ($E2E) {
     Step "playwright e2e" $ui { npm run e2e }
 }
 

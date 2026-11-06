@@ -102,6 +102,8 @@ export interface Publication {
   video_path: string;
   title: string;
   status: PublicationStatus;
+  /** ISO time (UTC) when the platform publishes a scheduled post. */
+  scheduled_at: string | null;
   url: string | null;
   error_code: string | null;
   error_params: Record<string, unknown>;
@@ -115,6 +117,8 @@ export interface PublishRequest {
   title: string;
   description: string;
   hashtags: string[];
+  /** ISO time with offset; omitted to publish now. */
+  scheduled_at?: string;
 }
 
 export const startPublication = (req: PublishRequest) =>
@@ -131,3 +135,25 @@ export const putSecret = (name: WritableSecret, value: string) =>
   request<void>(`/api/secrets/${name}`, { method: "PUT", body: { value } });
 export const deleteSecret = (name: SecretName) =>
   request<void>(`/api/secrets/${name}`, { method: "DELETE" });
+
+/** Sign-in to the user's own Telegram account (needed for "my account" publishing). */
+export type TelegramLoginState = "logged_out" | "code_sent" | "password_needed" | "logged_in";
+
+export interface TelegramLoginStatus {
+  state: TelegramLoginState;
+  /** Masked phone while sign-in is in progress, e.g. "+7••••••4567". */
+  phone: string | null;
+}
+
+const LOGIN = "/api/telegram/account";
+export const fetchTelegramLogin = () => request<TelegramLoginStatus>(LOGIN);
+export const sendTelegramCode = (phone: string) =>
+  request<TelegramLoginStatus>(`${LOGIN}/send-code`, { method: "POST", body: { phone } });
+export const signInTelegram = (code: string) =>
+  request<TelegramLoginStatus>(`${LOGIN}/sign-in`, { method: "POST", body: { code } });
+export const sendTelegramPassword = (password: string) =>
+  request<TelegramLoginStatus>(`${LOGIN}/password`, { method: "POST", body: { password } });
+export const cancelTelegramLogin = () =>
+  request<TelegramLoginStatus>(`${LOGIN}/cancel`, { method: "POST" });
+export const logoutTelegram = () =>
+  request<TelegramLoginStatus>(`${LOGIN}/logout`, { method: "POST" });

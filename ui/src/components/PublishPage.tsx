@@ -16,12 +16,21 @@ interface Props {
 export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
   const { t } = useTranslation();
   const desktop = useDesktopApi();
-  const ids = { path: useId(), title: useId(), description: useId(), tags: useId() };
+  const ids = {
+    path: useId(),
+    title: useId(),
+    description: useId(),
+    tags: useId(),
+    when: useId(),
+  };
 
   const [videoPath, setVideoPath] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [hashtags, setHashtags] = useState("");
+  const [later, setLater] = useState(false);
+  /** Value of the datetime-local input: local time without offset. */
+  const [scheduleAt, setScheduleAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ key: string; params: Record<string, unknown> } | null>(
     null,
@@ -39,11 +48,17 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
   const captionTooLong = captionLength > TELEGRAM_CAPTION_LIMIT;
 
   const tg = settings?.telegram;
+  const secrets = settings?.secrets;
+  const accountMode = tg?.mode === "account";
   const configured =
     tg !== undefined &&
-    tg.mode === "bot" &&
+    secrets !== undefined &&
     Boolean(tg.channel) &&
-    Boolean(settings?.secrets.telegram_bot_token);
+    (accountMode
+      ? tg.api_id !== null && secrets.telegram_api_hash && secrets.telegram_session
+      : secrets.telegram_bot_token);
+  // Only "my account" lets Telegram keep a scheduled post (the app may be off then).
+  const scheduling = accountMode && later;
 
   async function pick() {
     if (!desktop) return;
@@ -64,8 +79,12 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
         title,
         description,
         hashtags: tags,
+        // datetime-local has no offset; Date reads it as local time, ISO adds "Z".
+        ...(scheduling ? { scheduled_at: new Date(scheduleAt).toISOString() } : {}),
       });
       setVideoPath("");
+      setLater(false);
+      setScheduleAt("");
       setTitle("");
       setDescription("");
       setHashtags("");
@@ -124,7 +143,9 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
               <p className="text-xs text-slate-400">{t("publish.pathHint")}</p>
             </>
           )}
-          <p className="text-xs text-slate-400">{t("publish.formatHint")}</p>
+          <p className="text-xs text-slate-400">
+            {accountMode ? t("publish.formatHintAccount") : t("publish.formatHintBot")}
+          </p>
         </div>
 
         {/* Text */}
@@ -175,11 +196,13 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           <span className="font-medium">{t("publish.destination")}: </span>
           {configured && tg ? (
             <span data-testid="destination">
-              {t("platform.telegram")} · {t("settings.telegram.modeBot")} · {tg.channel}
+              {t("platform.telegram")} ·{" "}
+              {accountMode ? t("settings.telegram.modeAccount") : t("settings.telegram.modeBot")} ·{" "}
+              {tg.channel}
             </span>
           ) : (
             <span className="text-slate-500">
-              {t("publish.notConfigured")}{" "}
+              {accountMode ? t("publish.notConfiguredAccount") : t("publish.notConfiguredBot")}{" "}
               <button type="button" onClick={onOpenSettings} className="text-sky-700 underline">
                 {t("publish.openSettings")}
               </button>
@@ -187,14 +210,62 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           )}
         </div>
 
+        {/* When (only "my account": Telegram keeps the scheduled post) */}
+        {accountMode && (
+          <fieldset className="mt-5 space-y-2">
+            <legend className="mb-1 text-sm font-medium">{t("publish.when")}</legend>
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="publish-when"
+                  checked={!later}
+                  onChange={() => setLater(false)}
+                />
+                {t("publish.now")}
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="publish-when"
+                  checked={later}
+                  onChange={() => setLater(true)}
+                />
+                {t("publish.later")}
+              </label>
+            </div>
+            {later && (
+              <div className="space-y-1.5">
+                <label htmlFor={ids.when} className="text-sm">
+                  {t("publish.scheduleAt")}
+                </label>
+                <input
+                  id={ids.when}
+                  type="datetime-local"
+                  value={scheduleAt}
+                  onChange={(e) => setScheduleAt(e.target.value)}
+                  className={input}
+                />
+                <p className="text-xs text-slate-400">{t("publish.scheduleHint")}</p>
+              </div>
+            )}
+          </fieldset>
+        )}
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            disabled={busy || videoPath.trim() === "" || captionTooLong}
+            disabled={
+              busy || videoPath.trim() === "" || captionTooLong || (scheduling && scheduleAt === "")
+            }
             onClick={() => void publish()}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-40"
           >
-            {busy ? t("publish.starting") : t("publish.publishNow")}
+            {busy
+              ? t("publish.starting")
+              : scheduling
+                ? t("publish.schedule")
+                : t("publish.publishNow")}
           </button>
           {error && (
             <span role="alert" className="text-sm text-rose-600">

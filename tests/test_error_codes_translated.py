@@ -25,6 +25,7 @@ EXTRA_ERROR_CODES = {
     "telegram_invalid_token",
     "telegram_chat_not_found",
     "telegram_bot_not_admin",
+    "telegram_account_file_too_large",
     "unknown",
     "network",
 }

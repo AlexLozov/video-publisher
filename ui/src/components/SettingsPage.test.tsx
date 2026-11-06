@@ -26,6 +26,9 @@ function setup(settings: Settings = makeSettings(), extra: Record<string, Route>
     "PUT /api/secrets/telegram_bot_token": { status: 204 },
     "DELETE /api/secrets/telegram_bot_token": { status: 204 },
     "PUT /api/secrets/telegram_api_hash": { status: 204 },
+    "GET /api/telegram/account": () => ({
+      body: { state: current.secrets.telegram_session ? "logged_in" : "logged_out", phone: null },
+    }),
     ...extra,
   });
   render(<App />);
@@ -94,7 +97,9 @@ describe("settings page: telegram mode", () => {
     await userEvent.click(screen.getByRole("radio", { name: /Мой аккаунт/ }));
     expect(screen.getByLabelText("api_id")).toBeInTheDocument();
     expect(screen.getByLabelText("api_hash")).toBeInTheDocument();
-    expect(screen.getByTestId("telegram-session-status")).toHaveTextContent("не выполнен");
+    expect(await screen.findByTestId("telegram-login-status")).toHaveTextContent(
+      "Вход не выполнен",
+    );
     expect(screen.queryByLabelText("Токен бота")).not.toBeInTheDocument();
   });
 
@@ -106,7 +111,8 @@ describe("settings page: telegram mode", () => {
       }),
     );
     await openSettings();
-    expect(screen.getByTestId("telegram-session-status")).toHaveTextContent("выполнен");
+    expect(await screen.findByTestId("telegram-login-status")).toHaveTextContent("Вход выполнен");
+    expect(screen.getByRole("button", { name: "Выйти" })).toBeInTheDocument();
     expect(screen.getByTestId("telegram_api_hash-status")).toHaveTextContent("задан");
   });
 

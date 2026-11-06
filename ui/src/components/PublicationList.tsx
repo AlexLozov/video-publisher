@@ -20,7 +20,7 @@ interface Props {
 
 /** Recent publications; keeps polling while any of them is still uploading. */
 export function PublicationList({ refreshKey, pollMs = 1500 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<Publication[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -82,6 +82,16 @@ export function PublicationList({ refreshKey, pollMs = 1500 }: Props) {
                 {t(`platform.${p.platform}`, { defaultValue: p.platform })}
                 {p.target ? ` · ${p.target}` : ""}
               </div>
+              {p.status === "scheduled" && p.scheduled_at && (
+                <p data-testid="publication-scheduled" className="mt-1 text-sm text-sky-700">
+                  {t("publications.scheduledFor", {
+                    date: new Date(p.scheduled_at).toLocaleString(i18n.resolvedLanguage, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }),
+                  })}
+                </p>
+              )}
               {p.status === "published" && p.url && (
                 <a
                   href={p.url}

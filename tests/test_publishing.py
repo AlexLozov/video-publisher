@@ -22,7 +22,6 @@ from video_publisher.publishing import (
 )
 from video_publisher.storage.models import PublicationRow
 from video_publisher.user_settings import SettingsPatch, SettingsService, TelegramPatch
-from video_publisher.user_settings.models import TelegramMode
 
 TOKEN = "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ"
 
@@ -283,16 +282,6 @@ def test_factory_reports_missing_settings(
         default_adapter_factory(Platform.TELEGRAM, settings_service)
     assert info.value.code == "telegram_not_configured"
     assert info.value.params == {"missing": missing}
-
-
-def test_factory_account_mode_not_available_yet(
-    settings_service: SettingsService, secrets: MemorySecretStore
-) -> None:
-    configure_bot(settings_service, secrets)
-    settings_service.update(SettingsPatch(telegram=TelegramPatch(mode=TelegramMode.ACCOUNT)))
-    with pytest.raises(PublishError) as info:
-        default_adapter_factory(Platform.TELEGRAM, settings_service)
-    assert info.value.code == "telegram_account_not_available"
 
 
 @pytest.mark.parametrize("platform", [p for p in Platform if p is not Platform.TELEGRAM])
