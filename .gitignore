@@ -23,3 +23,10 @@ dist/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# Test artifacts
+.coverage
+coverage/
+htmlcov/
+playwright-report/
+test-results/
