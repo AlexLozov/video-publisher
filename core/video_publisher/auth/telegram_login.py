@@ -46,7 +46,7 @@ class LoginState(StrEnum):
 
 class LoginStatus(BaseModel):
     state: LoginState
-    # Masked phone while a login is in progress, e.g. "+7•••••••4567".
+    # Masked phone while a login is in progress, e.g. "+7••••••4567".
     phone: str | None = None
 
 

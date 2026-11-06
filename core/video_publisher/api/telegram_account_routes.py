@@ -1,6 +1,6 @@
 """Logging in to the user's own Telegram account (Settings → Telegram → "My account").
 
-Every endpoint returns the login state: ``{"state": ..., "phone": "+7•••••••4567"|null}``.
+Every endpoint returns the login state: ``{"state": ..., "phone": "+7••••••4567"|null}``.
 Errors come as codes, e.g. ``telegram_code_invalid`` or ``telegram_flood_wait`` with
 ``{"seconds": 120}``. The phone number, code and password are never stored or logged.
 """

@@ -14,15 +14,14 @@
   - Зависимости: telethon, cryptg.
 
 ## Осталось
-1. Переводы новых кодов ошибок (ru/en), убрать `telegram_account_not_available`.
+1. ~~Переводы~~ готовы; pytest входа готов (`tests/test_telegram_login.py`, фейк `tests/fake_telegram_account.py`).
 2. pytest: вход, адаптер, расписание, сервис, API (Telethon полностью замокан).
 3. UI: вход на экране настроек, подсказка про my.telegram.org, режим аккаунта и расписание на экране публикации, статус «запланировано на…».
 4. Vitest: ключевые сценарии.
 5. Документация (architecture.md), `scripts\check.ps1` зелёный, слияние, STATUS.md.
 
 ## Следующий шаг
-Переводы ошибок + pytest для бэкенда.
+pytest для адаптера, расписания и сервиса публикации.
 
 ## Падающие тесты
-- `test_error_codes_translated` (нет переводов новых кодов).
 - `test_publishing.py::test_factory_account_mode_not_available_yet` (устарел, заменить).
