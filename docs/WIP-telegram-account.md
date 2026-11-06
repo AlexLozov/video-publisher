@@ -15,12 +15,12 @@
   - Тесты: `tests/fake_telegram_account.py`, `test_telegram_login.py`, `test_telegram_account.py`, `test_publishing_account.py`.
 
 ## Осталось
-1. UI: `api.ts` (типы + вызовы входа, scheduled_at), компонент входа на экране настроек, режим аккаунта и расписание на экране публикации, статус «запланировано на…».
-2. Vitest: ключевые сценарии (вход, ошибки, расписание).
+1. ~~UI~~ готов: вход в настройках, режим аккаунта и расписание на экране публикации, «запланировано на…».
+2. ~~Vitest~~ готов (122 теста).
 3. Документация (architecture.md, README), `scripts\check.ps1` зелёный, удалить этот файл, слияние `--no-ff`, STATUS.md через `docs/status-telegram-account`.
 
 ## Следующий шаг
-UI: `ui/src/api.ts` и `ui/src/components/TelegramLogin.tsx`.
+Документация (architecture.md, README), затем `scriptseck.ps1`.
 
 ## Падающие тесты
-- Vitest/typecheck могут падать: ключи локалей `settings.telegram.session*`, `publish.formatHint`, `publish.notConfigured` переименованы, компоненты ещё не обновлены.
+- нет

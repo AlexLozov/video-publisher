@@ -24,6 +24,7 @@ function pub(overrides: Partial<Publication> = {}): Publication {
     video_path: "C:\\Videos\\clip.mp4",
     title: "",
     status: "published",
+    scheduled_at: null,
     url: "https://t.me/my_channel/42",
     error_code: null,
     error_params: {},
@@ -107,7 +108,6 @@ describe("publish page: destination", () => {
     ["no settings yet", null],
     ["no channel", makeSettings({ secrets: CONFIGURED.secrets })],
     ["no token", makeSettings({ telegram: CONFIGURED.telegram })],
-    ["account mode", makeSettings({ ...CONFIGURED, telegram: { ...CONFIGURED.telegram, mode: "account" } })],
   ])("offers settings when not configured (%s)", async (_name, settings) => {
     const { onOpenSettings } = setup({}, settings);
     expect(screen.getByText("Telegram-бот не настроен.")).toBeInTheDocument();
@@ -293,5 +293,110 @@ describe("publication list", () => {
     const count = fetch.mock.calls.length;
     await new Promise((r) => setTimeout(r, 40));
     expect(fetch.mock.calls.length).toBe(count);
+  });
+});
+
+const ACCOUNT = makeSettings({
+  telegram: { mode: "account", channel: "@my_channel", api_id: 4242 },
+  secrets: { telegram_bot_token: false, telegram_api_hash: true, telegram_session: true },
+});
+
+describe("publish page: my account mode", () => {
+  it("shows the account destination and the 2 GB limit", () => {
+    setup({}, ACCOUNT);
+    expect(screen.getByTestId("destination")).toHaveTextContent(
+      "Telegram · Мой аккаунт · @my_channel",
+    );
+    expect(screen.getByText("Для Telegram через аккаунт: MP4 до 2 ГБ.")).toBeInTheDocument();
+  });
+
+  it("asks to finish account setup when not signed in", () => {
+    setup(
+      {},
+      makeSettings({ ...ACCOUNT, secrets: { ...ACCOUNT.secrets, telegram_session: false } }),
+    );
+    expect(screen.getByText(/Telegram-аккаунт не настроен/)).toBeInTheDocument();
+  });
+
+  it("offers scheduling only in account mode", () => {
+    setup();
+    expect(screen.queryByText("По расписанию")).not.toBeInTheDocument();
+  });
+
+  it("publishes now without a time", async () => {
+    const { fetch } = setup(
+      { "POST /api/publications": { status: 202, body: pub({ status: "publishing" }) } },
+      ACCOUNT,
+    );
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
+    await userEvent.click(screen.getByRole("button", { name: "Опубликовать сейчас" }));
+    await waitFor(() =>
+      expect(calls(fetch).some((c) => c.method === "POST")).toBe(true),
+    );
+    const post = calls(fetch).find((c) => c.method === "POST");
+    expect(post?.body).not.toHaveProperty("scheduled_at");
+  });
+
+  it("schedules at the chosen local time, sent as UTC", async () => {
+    const { fetch } = setup(
+      { "POST /api/publications": { status: 202, body: pub({ status: "publishing" }) } },
+      ACCOUNT,
+    );
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
+    await userEvent.click(screen.getByLabelText("По расписанию"));
+    const button = screen.getByRole("button", { name: "Запланировать" });
+    expect(button).toBeDisabled(); // no time yet
+
+    const when = screen.getByLabelText("Дата и время публикации");
+    await userEvent.type(when, "2026-12-01T18:30");
+    expect(button).toBeEnabled();
+    await userEvent.click(button);
+
+    await waitFor(() =>
+      expect(calls(fetch).some((c) => c.method === "POST")).toBe(true),
+    );
+    const post = calls(fetch).find((c) => c.method === "POST");
+    expect((post?.body as { scheduled_at: string }).scheduled_at).toBe(
+      new Date("2026-12-01T18:30").toISOString(),
+    );
+    // Form is reset after success.
+    await waitFor(() => expect(screen.getByLabelText("Сейчас")).toBeChecked());
+  });
+
+  it("shows a schedule error from the backend", async () => {
+    setup(
+      {
+        "POST /api/publications": {
+          status: 422,
+          body: { code: "schedule_in_past", params: { min_minutes: 1 } },
+        },
+      },
+      ACCOUNT,
+    );
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
+    await userEvent.click(screen.getByLabelText("По расписанию"));
+    await userEvent.type(screen.getByLabelText("Дата и время публикации"), "2020-01-01T10:00");
+    await userEvent.click(screen.getByRole("button", { name: "Запланировать" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "хотя бы на 1 мин позже текущего",
+    );
+  });
+});
+
+describe("publication list: scheduled", () => {
+  it("shows when a scheduled post goes out", async () => {
+    const at = "2026-12-01T15:30:00Z";
+    mockFetch({
+      "GET /api/publications?limit=20": {
+        body: [pub({ status: "scheduled", url: null, scheduled_at: at })],
+      },
+    });
+    render(<PublicationList refreshKey={0} pollMs={10} />);
+    expect(await screen.findByTestId("publication-status")).toHaveTextContent("запланировано");
+    const expected = new Date(at).toLocaleString("ru", { dateStyle: "medium", timeStyle: "short" });
+    expect(screen.getByTestId("publication-scheduled")).toHaveTextContent(
+      `запланировано на ${expected}`,
+    );
+    expect(screen.queryByText("Открыть пост")).not.toBeInTheDocument();
   });
 });
