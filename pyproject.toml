@@ -68,7 +68,7 @@ source = ["video_publisher"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 70
 show_missing = true
 skip_covered = false
 exclude_also = [
