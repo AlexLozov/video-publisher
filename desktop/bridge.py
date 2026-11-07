@@ -13,9 +13,11 @@ import json
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol
 
+# pywebview accepts only letters, digits, "_" and spaces in a filter label:
+# "Видео / Video" (with a slash) raised ValueError and the dialog never opened.
 VIDEO_FILE_TYPES = (
-    "Видео / Video (*.mp4;*.mov;*.m4v;*.mkv;*.avi;*.webm)",
-    "Все файлы / All files (*.*)",  # noqa: RUF001
+    "Video (*.mp4;*.mov;*.m4v;*.mkv;*.avi;*.webm)",
+    "All files (*.*)",
 )
 
 

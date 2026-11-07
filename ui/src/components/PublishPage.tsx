@@ -62,10 +62,15 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
 
   async function pick() {
     if (!desktop) return;
-    const path = await desktop.pick_video();
-    if (path) {
-      setVideoPath(path);
-      setError(null);
+    try {
+      const path = await desktop.pick_video();
+      if (path) {
+        setVideoPath(path);
+        setError(null);
+      }
+    } catch {
+      // A failing native dialog used to do nothing at all; tell the user instead.
+      setError({ key: "errors.file_dialog_failed", params: {} });
     }
   }
 

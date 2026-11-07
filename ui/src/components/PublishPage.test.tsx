@@ -81,6 +81,15 @@ describe("publish page: choosing a video", () => {
     expect(screen.getByText("first.mp4")).toBeInTheDocument();
   });
 
+  it("shows an error when the native dialog fails", async () => {
+    window.pywebview = { api: { pick_video: vi.fn().mockRejectedValue(new Error("bad filter")) } };
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "Выбрать видео…" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось открыть окно выбора файла",
+    );
+  });
+
   it("accepts a file dropped onto the window", async () => {
     window.pywebview = { api: { pick_video: vi.fn() } };
     setup();

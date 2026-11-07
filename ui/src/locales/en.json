@@ -144,6 +144,7 @@
     "schedule_too_far": "Posts can be scheduled at most {{max_days}} days ahead.",
     "schedule_timezone_required": "The publish time has no time zone.",
     "scheduling_not_supported": "This publishing method cannot schedule posts. For Telegram choose “My account” in settings.",
+    "file_dialog_failed": "Could not open the file dialog. Drag the video into the app window instead.",
     "unknown": "Unknown error"
   },
   "publish": {
