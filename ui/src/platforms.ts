@@ -1,7 +1,7 @@
 import type { Settings } from "./api";
 
-/** All networks in display order. Names are translated via `platform.<id>`. */
-export const ALL_PLATFORMS = ["youtube", "tiktok", "instagram", "facebook", "telegram"] as const;
+/** All networks in display order (working ones first). Names are translated via `platform.<id>`. */
+export const ALL_PLATFORMS = ["telegram", "youtube", "instagram", "facebook", "tiktok"] as const;
 export type PlatformId = (typeof ALL_PLATFORMS)[number];
 
 /** Networks the app can already publish to. */

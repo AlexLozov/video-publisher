@@ -27,7 +27,7 @@
 
 ## api — HTTP API (`core/video_publisher/api/`)
 
-Приложение на FastAPI, через которое с ядром общается интерфейс. Сейчас есть `GET /api/health`, `GET /api/platforms`, `GET/PATCH /api/settings`, `PUT/DELETE /api/secrets/{name}`, публикации (`POST/GET /api/publications`, необязательное поле `scheduled_at` с часовым поясом) и вход в Telegram-аккаунт (`GET /api/telegram/account`, `POST …/send-code`, `…/sign-in`, `…/password`, `…/cancel`, `…/logout`). Ошибки проверки данных приходят как `{"code": "validation_error", "params": {"fields": {"body.telegram.channel": "invalid_channel"}}}`. В десктоп-режиме API заодно отдаёт собранный интерфейс как статику.
+Приложение на FastAPI, через которое с ядром общается интерфейс. Сейчас есть `GET /api/health`, `GET /api/platforms`, `GET/PATCH /api/settings`, `PUT/DELETE /api/secrets/{name}`, публикации (`POST/GET /api/publications`, необязательное поле `scheduled_at` с часовым поясом; `POST /api/publications/batch` — одно видео сразу в несколько соцсетей: сначала проверяются все, при ошибке ничего не запускается, у записей общий `batch_id`; `DELETE /api/publications/{id}` — удалить запись, запланированный пост сначала отменяется на площадке через `cancel_scheduled`; `DELETE /api/publications` — очистить историю от опубликованных и неудачных, запланированные остаются) и вход в Telegram-аккаунт (`GET /api/telegram/account`, `POST …/send-code`, `…/sign-in`, `…/password`, `…/cancel`, `…/logout`). Ошибки проверки данных приходят как `{"code": "validation_error", "params": {"fields": {"body.telegram.channel": "invalid_channel"}}}`. В десктоп-режиме API заодно отдаёт собранный интерфейс как статику.
 
 ## ui — интерфейс (`ui/`)
 
@@ -37,7 +37,9 @@ React + TypeScript + Vite + Tailwind.
 
 ## desktop — десктопная оболочка (`desktop/run.py`)
 
-Запускает uvicorn в фоновом потоке на `127.0.0.1` на свободном порту и открывает окно pywebview с интерфейсом.
+Запускает uvicorn в фоновом потоке на `127.0.0.1` на свободном порту и открывает окно pywebview с интерфейсом. `bridge.py` даёт интерфейсу окна Windows «Открыть файл» (`pick_video`) и «Сохранить как» (`save_csv`, экспорт истории в CSV). Подписи фильтров файлов — только латиница, цифры и пробелы: pywebview отвергает, например, косую черту, и окно молча не открывается.
+
+Запуск для пользователя — `Запуск.bat` в корне (логика в `scripts\launch.ps1`): при первом запуске ставит зависимости, пересобирает интерфейс при изменениях, один раз создаёт ярлык на рабочем столе (`desktop\icon.ico`) и запускает приложение через `pythonw` без консоли.
 
 ## auth-server (в будущем)
 
