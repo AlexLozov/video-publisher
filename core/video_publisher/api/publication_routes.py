@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from video_publisher.api.errors import ApiError
 from video_publisher.platforms.errors import PublishError
-from video_publisher.publishing import PublicationView, PublishingService, PublishRequest
+from video_publisher.publishing import (
+    BatchPublishRequest,
+    PublicationView,
+    PublishingService,
+    PublishRequest,
+)
 
 
 def get_service(request: Request) -> PublishingService:
@@ -24,6 +29,15 @@ def start_publication(body: PublishRequest, service: Service) -> PublicationView
     """Validate and start publishing in the background. Poll GET /{id} for the result."""
     try:
         return service.start(body)
+    except PublishError as exc:
+        raise ApiError(exc.code, status_code=422, **exc.params) from exc
+
+
+@router.post("/batch", status_code=202, response_model=list[PublicationView])
+def start_batch(body: BatchPublishRequest, service: Service) -> list[PublicationView]:
+    """One video to several networks. Nothing starts unless every network accepts it."""
+    try:
+        return service.start_batch(body)
     except PublishError as exc:
         raise ApiError(exc.code, status_code=422, **exc.params) from exc
 

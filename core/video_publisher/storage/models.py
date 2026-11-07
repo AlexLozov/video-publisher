@@ -32,6 +32,8 @@ class PublicationRow(Base):
     __tablename__ = "publications"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    # Same value for every network of one upload; the history groups by it.
+    batch_id: Mapped[str | None] = mapped_column(String(36), index=True)
     platform: Mapped[str] = mapped_column(String(32), nullable=False)
     # How it is published, e.g. "bot" or "account" for Telegram.
     method: Mapped[str] = mapped_column(String(32), nullable=False)

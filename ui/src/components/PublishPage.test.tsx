@@ -18,6 +18,7 @@ const CONFIGURED = makeSettings({
 function pub(overrides: Partial<Publication> = {}): Publication {
   return {
     id: "p1",
+    batch_id: "b1",
     platform: "telegram",
     method: "bot",
     target: "@my_channel",
@@ -125,6 +126,55 @@ describe("publish page: destination", () => {
   });
 });
 
+describe("publish page: choosing networks", () => {
+  it("ticks every set-up network and greys out the rest", () => {
+    setup();
+    expect(screen.getByTestId("network-telegram")).toBeChecked();
+    expect(screen.getByTestId("network-telegram")).toBeEnabled();
+    for (const p of ["youtube", "tiktok", "instagram", "facebook"]) {
+      expect(screen.getByTestId(`network-${p}`)).toBeDisabled();
+      expect(screen.getByTestId(`network-${p}`)).not.toBeChecked();
+    }
+    expect(screen.getAllByText("Скоро")).toHaveLength(4);
+  });
+
+  it("leaves a network that is not set up unticked", () => {
+    setup({}, makeSettings());
+    expect(screen.getByTestId("network-telegram")).not.toBeChecked();
+    expect(screen.getByTestId("network-telegram")).toBeDisabled();
+  });
+
+  it("cannot publish with no network ticked", async () => {
+    setup();
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\\a.mp4");
+    const button = screen.getByRole("button", { name: "Опубликовать сейчас" });
+    expect(button).toBeEnabled();
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    expect(button).toBeDisabled();
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    expect(button).toBeEnabled();
+  });
+
+  it("names the network in an error", async () => {
+    setup({
+      "POST /api/publications/batch": {
+        status: 422,
+        body: { code: "video_not_found", params: { platform: "telegram" } },
+      },
+    });
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\\a.mp4");
+    await userEvent.click(screen.getByRole("button", { name: "Опубликовать сейчас" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/^Telegram: Файл не найден/);
+  });
+
+  it("hides scheduling when Telegram is unticked", async () => {
+    setup({}, ACCOUNT);
+    expect(screen.getByText("По расписанию")).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    expect(screen.queryByText("По расписанию")).not.toBeInTheDocument();
+  });
+});
+
 describe("publish page: caption", () => {
   it("counts the caption like the backend and blocks when too long", async () => {
     setup();
@@ -145,7 +195,7 @@ describe("publish page: publishing", () => {
   it("sends the request, clears the form and shows progress until published", async () => {
     let listCalls = 0;
     const { fetch } = setup({
-      "POST /api/publications": { status: 202, body: pub({ status: "publishing", url: null }) },
+      "POST /api/publications/batch": { status: 202, body: [pub({ status: "publishing", url: null })] },
       "GET /api/publications?limit=20": () => {
         listCalls += 1;
         if (listCalls === 1) return { body: [] };
@@ -163,10 +213,10 @@ describe("publish page: publishing", () => {
 
     expect(calls(fetch)).toContainEqual({
       method: "POST",
-      url: "/api/publications",
+      url: "/api/publications/batch",
       body: {
         video_path: "C:\\Videos\\clip.mp4",
-        platform: "telegram",
+        platforms: ["telegram"],
         title: "Hello",
         description: "World",
         hashtags: ["cats", "dogs"],
@@ -189,7 +239,7 @@ describe("publish page: publishing", () => {
     ["telegram_not_configured", { missing: ["bot_token"] }, "Telegram не настроен"],
     ["caption_too_long", { max: 1024, length: 2000 }, "длиннее 1024 символов (2000)"],
   ])("shows the translated error %s and keeps the form", async (code, params, text) => {
-    setup({ "POST /api/publications": { status: 422, body: { code, params } } });
+    setup({ "POST /api/publications/batch": { status: 422, body: { code, params } } });
     await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\\a.mov");
     await userEvent.click(screen.getByRole("button", { name: "Опубликовать сейчас" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(text);
@@ -197,14 +247,14 @@ describe("publish page: publishing", () => {
   });
 
   it("shows a network error when the backend is unreachable", async () => {
-    setup({ "POST /api/publications": { error: new TypeError("offline") } });
+    setup({ "POST /api/publications/batch": { error: new TypeError("offline") } });
     await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\\a.mp4");
     await userEvent.click(screen.getByRole("button", { name: "Опубликовать сейчас" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Нет связи с сервером");
   });
 
   it("falls back to a generic message for an unknown error code", async () => {
-    setup({ "POST /api/publications": { status: 422, body: { code: "brand_new", params: {} } } });
+    setup({ "POST /api/publications/batch": { status: 422, body: { code: "brand_new", params: {} } } });
     await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\\a.mp4");
     await userEvent.click(screen.getByRole("button", { name: "Опубликовать сейчас" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Неизвестная ошибка");
@@ -334,7 +384,7 @@ describe("publish page: my account mode", () => {
 
   it("publishes now without a time", async () => {
     const { fetch } = setup(
-      { "POST /api/publications": { status: 202, body: pub({ status: "publishing" }) } },
+      { "POST /api/publications/batch": { status: 202, body: [pub({ status: "publishing" })] } },
       ACCOUNT,
     );
     await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
@@ -348,7 +398,7 @@ describe("publish page: my account mode", () => {
 
   it("schedules at the chosen local time, sent as UTC", async () => {
     const { fetch } = setup(
-      { "POST /api/publications": { status: 202, body: pub({ status: "publishing" }) } },
+      { "POST /api/publications/batch": { status: 202, body: [pub({ status: "publishing" })] } },
       ACCOUNT,
     );
     await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
@@ -375,7 +425,7 @@ describe("publish page: my account mode", () => {
   it("shows a schedule error from the backend", async () => {
     setup(
       {
-        "POST /api/publications": {
+        "POST /api/publications/batch": {
           status: 422,
           body: { code: "schedule_in_past", params: { min_minutes: 1 } },
         },
