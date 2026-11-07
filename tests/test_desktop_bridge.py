@@ -42,6 +42,14 @@ class FakeWindow:
         self.scripts.append(script)
 
 
+@pytest.mark.parametrize("file_type", VIDEO_FILE_TYPES)
+def test_file_types_pass_pywebview_validation(file_type: str) -> None:
+    # Regression: a "/" in the label made pywebview raise ValueError, so the button did nothing.
+    from webview.util import parse_file_type
+
+    parse_file_type(file_type)
+
+
 def test_pick_video_returns_full_path() -> None:
     window = FakeWindow([r"C:\Videos\clip.mp4"])
     api = DesktopApi(open_dialog_type=OPEN)
