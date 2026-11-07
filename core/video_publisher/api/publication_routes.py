@@ -2,7 +2,8 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import BaseModel
 
 from video_publisher.api.errors import ApiError
 from video_publisher.platforms.errors import PublishError
@@ -22,6 +23,9 @@ def get_service(request: Request) -> PublishingService:
 Service = Annotated[PublishingService, Depends(get_service)]
 
 router = APIRouter(prefix="/api/publications")
+
+# The history screen loads everything it shows (and exports to CSV) in one request.
+MAX_LIST = 1000
 
 
 @router.post("", status_code=202, response_model=PublicationView)
@@ -44,9 +48,32 @@ def start_batch(body: BatchPublishRequest, service: Service) -> list[Publication
 
 @router.get("", response_model=list[PublicationView])
 def list_publications(
-    service: Service, limit: Annotated[int, Query(ge=1, le=100)] = 20
+    service: Service, limit: Annotated[int, Query(ge=1, le=MAX_LIST)] = 20
 ) -> list[PublicationView]:
     return service.recent(limit)
+
+
+class ClearResult(BaseModel):
+    deleted: int
+
+
+@router.delete("", response_model=ClearResult)
+def clear_history(service: Service) -> ClearResult:
+    """Remove finished records; scheduled and running publications stay."""
+    return ClearResult(deleted=service.clear())
+
+
+@router.delete("/{pub_id}", status_code=204)
+def delete_publication(pub_id: str, service: Service) -> Response:
+    """Remove one record; a scheduled post is withdrawn from the platform first."""
+    try:
+        found = service.delete(pub_id)
+    except PublishError as exc:
+        status = 409 if exc.code == "publication_in_progress" else 422
+        raise ApiError(exc.code, status_code=status, **exc.params) from exc
+    if not found:
+        raise ApiError("publication_not_found", status_code=404)
+    return Response(status_code=204)
 
 
 @router.get("/{pub_id}", response_model=PublicationView)

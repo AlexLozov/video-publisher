@@ -298,9 +298,11 @@ describe("publication list", () => {
   it("uses the file name when there is no title and shows target", async () => {
     mockFetch({ "GET /api/publications?limit=20": { body: [pub()] } });
     render(<PublicationList refreshKey={0} pollMs={10} />);
-    const item = await screen.findByTestId("publication");
-    expect(within(item).getByText("clip.mp4")).toBeInTheDocument();
-    expect(within(item).getByText("Telegram · @my_channel")).toBeInTheDocument();
+    const card = await screen.findByTestId("history-card");
+    expect(within(card).getByText("clip.mp4")).toBeInTheDocument();
+    const item = within(card).getByTestId("publication");
+    expect(within(item).getByText("Telegram")).toBeInTheDocument();
+    expect(within(item).getByText("@my_channel")).toBeInTheDocument();
   });
 
   it("does not show a link for a published item without url", async () => {

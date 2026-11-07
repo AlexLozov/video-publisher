@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 from typing import Any, Protocol
 
 # pywebview accepts only letters, digits, "_" and spaces in a filter label:
@@ -19,6 +20,7 @@ VIDEO_FILE_TYPES = (
     "Video (*.mp4;*.mov;*.m4v;*.mkv;*.avi;*.webm)",
     "All files (*.*)",
 )
+CSV_FILE_TYPES = ("CSV (*.csv)",)
 
 
 class FileDialogWindow(Protocol):
@@ -29,7 +31,7 @@ class FileDialogWindow(Protocol):
         allow_multiple: bool = ...,
         save_filename: str = ...,
         file_types: Sequence[str] = ...,
-    ) -> Sequence[str] | None: ...
+    ) -> Sequence[str] | str | None: ...
 
     def evaluate_js(self, script: str) -> Any: ...
 
@@ -37,9 +39,10 @@ class FileDialogWindow(Protocol):
 class DesktopApi:
     """Methods callable from JavaScript. Attribute names starting with _ are not exposed."""
 
-    def __init__(self, open_dialog_type: int) -> None:
+    def __init__(self, open_dialog_type: int, save_dialog_type: int = 30) -> None:
         self._window: FileDialogWindow | None = None
         self._open_dialog_type = open_dialog_type
+        self._save_dialog_type = save_dialog_type
 
     def attach(self, window: FileDialogWindow) -> None:
         self._window = window
@@ -53,6 +56,27 @@ class DesktopApi:
         if not result:
             return None  # dialog cancelled
         return str(result[0])
+
+    def save_csv(self, file_name: str, content: str) -> str | None:
+        """Ask where to save ``content`` (Windows "Save as") and write it there.
+
+        Returns the chosen path, or None if the dialog was cancelled. The UI puts a BOM
+        at the start of ``content`` so Excel reads Cyrillic correctly.
+        """
+        if self._window is None:
+            return None
+        result = self._window.create_file_dialog(
+            self._save_dialog_type, save_filename=file_name, file_types=CSV_FILE_TYPES
+        )
+        if not result:
+            return None
+        path = Path(result if isinstance(result, str) else result[0])
+        if path.suffix.lower() != ".csv":
+            path = path.with_name(path.name + ".csv")
+        # newline="" keeps the CRLF line ends the UI wrote (as the CSV standard asks).
+        with path.open("w", encoding="utf-8", newline="") as f:
+            f.write(content)
+        return str(path)
 
 
 def dropped_path(event: Mapping[str, Any]) -> str | None:

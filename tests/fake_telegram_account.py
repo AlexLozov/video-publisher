@@ -39,6 +39,7 @@ class FakeTelegramAccount:
         self.dialog_entities: dict[Any, str] = {-1001234567890: "peer:-1001234567890"}
         self.dialogs_loaded = False
         self.sent: list[dict[str, Any]] = []
+        self.deleted_scheduled: list[tuple[Any, list[int]]] = []
         self.next_id = 100
         self.clients: list[FakeClient] = []
 
@@ -129,6 +130,12 @@ class FakeClient:
     ) -> Any:
         self._step("upload_file", file, file_size=file_size, file_name=file_name)
         return SimpleNamespace(name=file_name, size=file_size)
+
+    async def __call__(self, request: Any) -> Any:
+        """Raw requests: only deleting scheduled messages is used by the app."""
+        self._step("invoke", request)
+        self.world.deleted_scheduled.append((request.peer, list(request.id)))
+        return SimpleNamespace(updates=[])
 
     async def send_file(self, entity: Any, file: Any, **kwargs: Any) -> Any:
         self._step("send_file", entity, file, **kwargs)

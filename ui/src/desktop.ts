@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 /** API exposed by desktop/bridge.py (DesktopApi) through pywebview. */
 interface DesktopApi {
   pick_video: () => Promise<string | null>;
+  /** Windows "Save as" + write; resolves to the saved path or null if cancelled. */
+  save_csv?: (fileName: string, content: string) => Promise<string | null>;
 }
 
 declare global {

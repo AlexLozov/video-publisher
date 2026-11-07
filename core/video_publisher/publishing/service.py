@@ -353,6 +353,47 @@ class PublishingService:
             ).all()
             return [PublicationView.from_row(r) for r in rows]
 
+    def delete(self, pub_id: str) -> bool:
+        """Remove one record from the history. False if there is no such record.
+
+        A post that is still waiting on the platform (``scheduled``) is withdrawn there
+        first, so deleting it means it will not go out. If that fails, nothing is deleted
+        and the error is raised. An upload in progress cannot be deleted.
+        """
+        with self._sessions() as session:
+            row = session.get(PublicationRow, pub_id)
+            if row is None:
+                return False
+            status, method, external_id = row.status, row.method, row.external_id
+            platform = Platform(row.platform)
+
+        if status == PublicationStatus.PUBLISHING.value:
+            raise PublishError("publication_in_progress")
+        if status == PublicationStatus.SCHEDULED.value and external_id:
+            built = self._factory(platform, self._settings)
+            if built.method != method:
+                # Scheduled from "my account", but Settings now say "bot": cannot reach it.
+                raise PublishError("cancel_needs_method", method=method)
+            built.adapter.cancel_scheduled(external_id)
+
+        with self._sessions.begin() as session:
+            row = session.get(PublicationRow, pub_id)
+            if row is not None:
+                session.delete(row)
+        return True
+
+    def clear(self) -> int:
+        """Remove finished records (published / failed). Scheduled and running ones stay,
+        so clearing the history never cancels a post. Returns how many were removed."""
+        finished = (PublicationStatus.PUBLISHED.value, PublicationStatus.FAILED.value)
+        with self._sessions.begin() as session:
+            rows = session.scalars(
+                select(PublicationRow).where(PublicationRow.status.in_(finished))
+            ).all()
+            for row in rows:
+                session.delete(row)
+            return len(rows)
+
     def recover_interrupted(self) -> int:
         """Mark uploads left ``publishing`` by a previous run as failed. Returns the count."""
         with self._sessions.begin() as session:

@@ -134,6 +134,12 @@ export const startBatch = (req: BatchPublishRequest) =>
   request<Publication[]>("/api/publications/batch", { method: "POST", body: req });
 export const fetchPublications = (limit = 20) =>
   request<Publication[]>(`/api/publications?limit=${limit}`);
+/** Removes one record; a scheduled post is withdrawn from the network first. */
+export const deletePublication = (id: string) =>
+  request<void>(`/api/publications/${id}`, { method: "DELETE" });
+/** Removes published and failed records; scheduled and running ones stay. */
+export const clearHistory = () =>
+  request<{ deleted: number }>("/api/publications", { method: "DELETE" });
 
 export const fetchHealth = () => request<Health>("/api/health");
 export const fetchPlatforms = () => request<PlatformInfo[]>("/api/platforms");

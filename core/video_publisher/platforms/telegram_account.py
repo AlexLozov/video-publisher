@@ -16,7 +16,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, ClassVar
 
-from telethon import errors
+from telethon import errors, functions
 from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
 
 from video_publisher.domain import Platform, PostFormat, Publication, Video
@@ -245,3 +245,31 @@ class TelegramAccountAdapter(PlatformAdapter):
         # A scheduled message has no public link until Telegram posts it.
         url = None if at is not None else post_url(self._channel, message_id)
         return PublishResult(external_id=str(message_id), url=url)
+
+    def cancel_scheduled(self, external_id: str) -> None:
+        """Delete a scheduled post from the channel's scheduled list.
+
+        Telegram does not complain about an id that is no longer scheduled (already
+        posted or removed by hand), so this is safe to repeat.
+        """
+        try:
+            message_id = int(external_id)
+        except ValueError:
+            raise PublishError("telegram_rejected") from None
+        make = self._client()
+
+        async def go() -> None:
+            client = make()
+            try:
+                await self._connect(client)
+                entity = await self._resolve(client)
+                await client(
+                    functions.messages.DeleteScheduledMessagesRequest(peer=entity, id=[message_id])
+                )
+            finally:
+                await close(client)
+
+        try:
+            run(go())
+        except Exception as exc:
+            raise self._fail(_publish_error(exc)) from exc
