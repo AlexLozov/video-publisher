@@ -2,6 +2,7 @@
 
 from video_publisher.publishing.service import (
     AdapterFactory,
+    BatchPublishRequest,
     BuiltAdapter,
     PublicationView,
     PublishingService,
@@ -12,6 +13,7 @@ from video_publisher.publishing.service import (
 
 __all__ = [
     "AdapterFactory",
+    "BatchPublishRequest",
     "BuiltAdapter",
     "PublicationView",
     "PublishRequest",

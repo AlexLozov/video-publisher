@@ -96,6 +96,8 @@ export type PublicationStatus = "draft" | "scheduled" | "publishing" | "publishe
 
 export interface Publication {
   id: string;
+  /** Shared by the networks of one upload. */
+  batch_id: string;
   platform: string;
   method: string;
   target: string | null;
@@ -123,6 +125,13 @@ export interface PublishRequest {
 
 export const startPublication = (req: PublishRequest) =>
   request<Publication>("/api/publications", { method: "POST", body: req });
+export interface BatchPublishRequest extends Omit<PublishRequest, "platform"> {
+  platforms: string[];
+}
+
+/** One video to several networks; nothing starts unless every network accepts it. */
+export const startBatch = (req: BatchPublishRequest) =>
+  request<Publication[]>("/api/publications/batch", { method: "POST", body: req });
 export const fetchPublications = (limit = 20) =>
   request<Publication[]>(`/api/publications?limit=${limit}`);
 

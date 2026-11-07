@@ -1,7 +1,8 @@
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, startPublication, type Settings } from "../api";
+import { ApiError, startBatch, type Settings } from "../api";
+import { ALL_PLATFORMS, isConfigured, SUPPORTED_PLATFORMS, type PlatformId } from "../platforms";
 import { buildCaption, fileName, parseHashtags, TELEGRAM_CAPTION_LIMIT } from "../caption";
 import { useDesktopApi, useFileDrop } from "../desktop";
 import { errorKey } from "../errors";
@@ -48,17 +49,20 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
   const captionTooLong = captionLength > TELEGRAM_CAPTION_LIMIT;
 
   const tg = settings?.telegram;
-  const secrets = settings?.secrets;
   const accountMode = tg?.mode === "account";
-  const configured =
-    tg !== undefined &&
-    secrets !== undefined &&
-    Boolean(tg.channel) &&
-    (accountMode
-      ? tg.api_id !== null && secrets.telegram_api_hash && secrets.telegram_session
-      : secrets.telegram_bot_token);
+  const configuredList = SUPPORTED_PLATFORMS.filter((p) => isConfigured(settings, p));
+  const configuredKey = configuredList.join(",");
+  // Every set-up network is ticked by default; re-tick when settings change.
+  const [selected, setSelected] = useState<PlatformId[]>(configuredList);
+  useEffect(() => {
+    setSelected(configuredKey ? (configuredKey.split(",") as PlatformId[]) : []);
+  }, [configuredKey]);
+  const toggle = (p: PlatformId) =>
+    setSelected((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+  const telegramOn = selected.includes("telegram");
   // Only "my account" lets Telegram keep a scheduled post (the app may be off then).
-  const scheduling = accountMode && later;
+  const canSchedule = accountMode && telegramOn;
+  const scheduling = canSchedule && later;
 
   async function pick() {
     if (!desktop) return;
@@ -78,9 +82,9 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await startPublication({
+      await startBatch({
         video_path: videoPath.trim(),
-        platform: "telegram",
+        platforms: ALL_PLATFORMS.filter((p) => selected.includes(p)),
         title,
         description,
         hashtags: tags,
@@ -196,27 +200,68 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           {t("publish.captionCounter", { count: captionLength, max: TELEGRAM_CAPTION_LIMIT })}
         </p>
 
-        {/* Destination */}
-        <div className="mt-5 rounded-xl bg-slate-50 p-3 text-sm">
-          <span className="font-medium">{t("publish.destination")}: </span>
-          {configured && tg ? (
-            <span data-testid="destination">
-              {t("platform.telegram")} ·{" "}
-              {accountMode ? t("settings.telegram.modeAccount") : t("settings.telegram.modeBot")} ·{" "}
-              {tg.channel}
-            </span>
-          ) : (
-            <span className="text-slate-500">
-              {accountMode ? t("publish.notConfiguredAccount") : t("publish.notConfiguredBot")}{" "}
-              <button type="button" onClick={onOpenSettings} className="text-sky-700 underline">
-                {t("publish.openSettings")}
-              </button>
-            </span>
-          )}
-        </div>
+        {/* Networks: every set-up one is ticked by default */}
+        <fieldset className="mt-5 space-y-1 rounded-xl bg-slate-50 p-3 text-sm">
+          <legend className="sr-only">{t("publish.destination")}</legend>
+          <p aria-hidden className="mb-1 font-medium">
+            {t("publish.destination")}
+          </p>
+          {ALL_PLATFORMS.map((p) => {
+            const supported = SUPPORTED_PLATFORMS.includes(p);
+            const ready = isConfigured(settings, p);
+            return (
+              <div key={p} className="flex flex-wrap items-center gap-2 py-0.5">
+                <label
+                  className={
+                    "flex items-center gap-2 " + (ready ? "cursor-pointer" : "text-slate-400")
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    data-testid={`network-${p}`}
+                    checked={selected.includes(p)}
+                    disabled={!ready}
+                    onChange={() => toggle(p)}
+                  />
+                  {p === "telegram" && ready && tg ? (
+                    <span data-testid="destination">
+                      {t("platform.telegram")} ·{" "}
+                      {accountMode
+                        ? t("settings.telegram.modeAccount")
+                        : t("settings.telegram.modeBot")}{" "}
+                      · {tg.channel}
+                    </span>
+                  ) : (
+                    <span>{t(`platform.${p}`)}</span>
+                  )}
+                </label>
+                {!supported && (
+                  <span className="rounded-full bg-slate-100 px-2 text-xs text-slate-500">
+                    {t("settings.state.soon")}
+                  </span>
+                )}
+                {supported && !ready && (
+                  <span className="text-slate-500">
+                    {p === "telegram" &&
+                      (accountMode
+                        ? t("publish.notConfiguredAccount")
+                        : t("publish.notConfiguredBot"))}{" "}
+                    <button
+                      type="button"
+                      onClick={onOpenSettings}
+                      className="text-sky-700 underline"
+                    >
+                      {t("publish.openSettings")}
+                    </button>
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </fieldset>
 
         {/* When (only "my account": Telegram keeps the scheduled post) */}
-        {accountMode && (
+        {canSchedule && (
           <fieldset className="mt-5 space-y-2">
             <legend className="mb-1 text-sm font-medium">{t("publish.when")}</legend>
             <div className="flex gap-4 text-sm">
@@ -261,7 +306,11 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           <button
             type="button"
             disabled={
-              busy || videoPath.trim() === "" || captionTooLong || (scheduling && scheduleAt === "")
+              busy ||
+              videoPath.trim() === "" ||
+              selected.length === 0 ||
+              captionTooLong ||
+              (scheduling && scheduleAt === "")
             }
             onClick={() => void publish()}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-40"
@@ -274,6 +323,8 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           </button>
           {error && (
             <span role="alert" className="text-sm text-rose-600">
+              {typeof error.params.platform === "string" &&
+                `${t(`platform.${error.params.platform}`)}: `}
               {t(error.key, { ...error.params, defaultValue: t("errors.unknown") })}
             </span>
           )}

@@ -65,8 +65,31 @@ class PublishRequest(BaseModel):
     scheduled_at: AwareDatetime | None = None
 
 
+class BatchPublishRequest(BaseModel):
+    """One video to several networks at once (the upload screen's checkboxes)."""
+
+    video_path: str = Field(min_length=1, max_length=4096)
+    platforms: list[Platform] = Field(min_length=1, max_length=len(Platform))
+    title: str = Field(default="", max_length=1000)
+    description: str = Field(default="", max_length=5000)
+    hashtags: list[str] = Field(default_factory=list, max_length=MAX_HASHTAGS)
+    scheduled_at: AwareDatetime | None = None
+
+    def for_platform(self, platform: Platform) -> PublishRequest:
+        return PublishRequest(
+            video_path=self.video_path,
+            platform=platform,
+            title=self.title,
+            description=self.description,
+            hashtags=self.hashtags,
+            scheduled_at=self.scheduled_at,
+        )
+
+
 class PublicationView(BaseModel):
     id: str
+    # Publications started together (one upload to several networks) share it.
+    batch_id: str
     platform: Platform
     method: str
     target: str | None
@@ -84,6 +107,7 @@ class PublicationView(BaseModel):
     def from_row(cls, row: PublicationRow) -> PublicationView:
         return cls(
             id=row.id,
+            batch_id=row.batch_id or row.id,
             platform=Platform(row.platform),
             method=row.method,
             target=row.target,
@@ -203,6 +227,41 @@ class PublishingService:
         self._executor = executor or ThreadPoolExecutor(max_workers=2, thread_name_prefix="pub")
 
     def start(self, request: PublishRequest) -> PublicationView:
+        prepared = self._prepare(request)
+        return self._launch([prepared])[0]
+
+    def start_batch(self, request: BatchPublishRequest) -> list[PublicationView]:
+        """Check every network first; publish only if all of them accept the video.
+
+        A problem with any network is raised (with ``platform`` added to its params)
+        before anything is uploaded, so the user fixes it and retries the whole upload.
+        """
+        platforms = list(dict.fromkeys(request.platforms))  # keep order, drop repeats
+        prepared = []
+        for platform in platforms:
+            try:
+                prepared.append(self._prepare(request.for_platform(platform)))
+            except PublishError as exc:
+                raise PublishError(exc.code, **{**exc.params, "platform": platform.value}) from exc
+        return self._launch(prepared)
+
+    def _launch(
+        self, prepared: list[tuple[BuiltAdapter, Publication, PublishRequest]]
+    ) -> list[PublicationView]:
+        batch_id = str(prepared[0][1].id)
+        views: list[PublicationView] = []
+        with self._sessions.begin() as session:
+            for built, publication, request in prepared:
+                row = self._new_row(built, publication, request)
+                row.batch_id = batch_id
+                session.add(row)
+                session.flush()
+                views.append(PublicationView.from_row(row))
+        for built, publication, _ in prepared:
+            self._executor.submit(self._run, built.adapter, publication)
+        return views
+
+    def _prepare(self, request: PublishRequest) -> tuple[BuiltAdapter, Publication, PublishRequest]:
         built = self._factory(request.platform, self._settings)
         text = PostText(
             title=request.title.strip(),
@@ -226,8 +285,14 @@ class PublishingService:
             if not built.adapter.supports_native_scheduling:
                 raise PublishError("scheduling_not_supported", method=built.method)
             check_schedule_time(request.scheduled_at, self._now(), built.adapter.max_schedule_ahead)
+        return built, publication, request
 
-        row = PublicationRow(
+    @staticmethod
+    def _new_row(
+        built: BuiltAdapter, publication: Publication, request: PublishRequest
+    ) -> PublicationRow:
+        text = publication.text
+        return PublicationRow(
             id=str(publication.id),
             platform=request.platform.value,
             method=built.method,
@@ -242,13 +307,6 @@ class PublishingService:
             ),
             error_params={},
         )
-        with self._sessions.begin() as session:
-            session.add(row)
-            session.flush()
-            view = PublicationView.from_row(row)
-
-        self._executor.submit(self._run, built.adapter, publication)
-        return view
 
     def _run(self, adapter: PlatformAdapter, publication: Publication) -> None:
         pub_id = str(publication.id)
