@@ -8,9 +8,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from telethon import errors
+from tests.test_publishing import DeferredExecutor, FakeAdapter, InlineExecutor
 
 from fake_telegram_account import SESSION_OK, FakeTelegramAccount
-from tests.test_publishing import DeferredExecutor, FakeAdapter, InlineExecutor
 from video_publisher.api import create_app
 from video_publisher.domain import Platform, Publication
 from video_publisher.platforms import PlatformRegistry

@@ -65,12 +65,12 @@ def test_save_csv_writes_utf8_with_bom(tmp_path: Path, returned: Any) -> None:
     api = DesktopApi(open_dialog_type=OPEN, save_dialog_type=SAVE)
     api.attach(window)
 
-    saved = api.save_csv("history.csv", BOM + "a;б\r\n1;2\r\n")
+    saved = api.save_csv("history.csv", BOM + "a;Привет\r\n1;2\r\n")
 
     assert saved == str(tmp_path / "history.csv")
     raw = (tmp_path / "history.csv").read_bytes()
     assert raw.startswith(b"\xef\xbb\xbf")
-    assert raw.decode("utf-8-sig") == "a;б\r\n1;2\r\n"
+    assert raw.decode("utf-8-sig") == "a;Привет\r\n1;2\r\n"
     assert window.dialog_calls[0]["type"] == SAVE
     assert window.dialog_calls[0]["file_types"] == CSV_FILE_TYPES
 
