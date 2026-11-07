@@ -152,6 +152,9 @@
     "schedule_timezone_required": "The publish time has no time zone.",
     "scheduling_not_supported": "This publishing method cannot schedule posts. For Telegram choose “My account” in settings.",
     "file_dialog_failed": "Could not open the file dialog. Drag the video into the app window instead.",
+    "publication_in_progress": "The video is still uploading. You can delete the record once it finishes.",
+    "cancel_needs_method": "The post was scheduled with the \"{{method}}\" method. Switch Telegram to it in Settings to cancel the post.",
+    "cancel_not_supported": "This network cannot cancel a scheduled post.",
     "unknown": "Unknown error"
   },
   "publish": {
@@ -193,6 +196,30 @@
       "published": "published",
       "failed": "failed"
     },
-    "scheduledFor": "scheduled for {{date}}"
+    "scheduledFor": "scheduled for {{date}}",
+    "created": "Uploaded {{date}}",
+    "delete": "Delete",
+    "deleteScheduledHint": "The scheduled post will be cancelled on the network.",
+    "confirmDelete": "Delete this record?",
+    "confirmClear": "Delete all published and failed records? Scheduled ones stay.",
+    "yes": "Yes",
+    "no": "Cancel",
+    "clear": "Clear history",
+    "cleared": "Records deleted: {{count}}",
+    "exportCsv": "Save as CSV",
+    "exported": "File saved",
+    "exportFailed": "Could not save the file",
+    "csv": {
+      "created": "Uploaded",
+      "file": "File",
+      "title": "Title",
+      "platform": "Network",
+      "method": "Method",
+      "target": "Channel / account",
+      "status": "Status",
+      "scheduled": "Scheduled for",
+      "url": "Link",
+      "error": "Error"
+    }
   }
 }

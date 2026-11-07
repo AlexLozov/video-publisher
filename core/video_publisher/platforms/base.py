@@ -7,6 +7,7 @@ from typing import ClassVar
 from pydantic import BaseModel, Field
 
 from video_publisher.domain import Platform, PostFormat, Publication, Video
+from video_publisher.platforms.errors import PublishError
 
 
 class ValidationResult(BaseModel):
@@ -51,3 +52,7 @@ class PlatformAdapter(ABC):
     @abstractmethod
     def schedule(self, publication: Publication, at: datetime) -> PublishResult:
         """Schedule publication on the platform side (only if natively supported)."""
+
+    def cancel_scheduled(self, external_id: str) -> None:
+        """Withdraw a post that ``schedule`` handed to the platform and is not out yet."""
+        raise PublishError("cancel_not_supported", platform=self.platform.value)

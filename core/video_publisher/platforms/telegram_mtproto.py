@@ -64,6 +64,9 @@ class AccountClient(Protocol):
 
     async def send_file(self, entity: Any, file: Any, **kwargs: Any) -> Any: ...
 
+    async def __call__(self, request: Any) -> Any:
+        """Send a raw MTProto request (e.g. ``DeleteScheduledMessagesRequest``)."""
+
 
 ClientFactory = Callable[[str, int, str], AccountClient]
 

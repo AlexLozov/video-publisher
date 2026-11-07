@@ -63,7 +63,9 @@ def main() -> None:
     port = find_free_port(host)
     server = start_server(host, port)
 
-    api = DesktopApi(open_dialog_type=webview.OPEN_DIALOG)
+    api = DesktopApi(
+        open_dialog_type=webview.FileDialog.OPEN, save_dialog_type=webview.FileDialog.SAVE
+    )
     window = webview.create_window(
         "Video Publisher", f"http://{host}:{port}/", width=1100, height=820, js_api=api
     )

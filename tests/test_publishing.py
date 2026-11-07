@@ -407,7 +407,7 @@ def test_api_unknown_publication(pub_client: tuple[TestClient, FakeAdapter]) -> 
     assert resp.json() == {"code": "publication_not_found", "params": {}}
 
 
-@pytest.mark.parametrize("limit", [0, 101, "x"])
+@pytest.mark.parametrize("limit", [0, 1001, "x"])
 def test_api_list_limit_validation(
     pub_client: tuple[TestClient, FakeAdapter], limit: object
 ) -> None:
