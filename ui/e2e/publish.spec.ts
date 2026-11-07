@@ -26,7 +26,10 @@ test("publish: MP4 goes out through the bot and the result persists", async ({
   await page.getByLabel("Хэштеги").fill("#test, e2e");
   await page.getByRole("button", { name: "Опубликовать сейчас" }).click();
 
-  const item = page.getByTestId("publication").filter({ hasText: "Первый ролик" });
+  const item = page
+    .getByTestId("history-card")
+    .filter({ hasText: "Первый ролик" })
+    .getByTestId("publication");
   await expect(item.getByTestId("publication-status")).toHaveText("опубликовано");
   await expect(item.getByRole("link", { name: "Открыть пост" })).toHaveAttribute(
     "href",
@@ -46,7 +49,7 @@ test("publish: MP4 goes out through the bot and the result persists", async ({
   await page.reload();
   await page.getByRole("navigation").getByRole("button", { name: "Публикация" }).click();
   await expect(
-    page.getByTestId("publication").filter({ hasText: "Первый ролик" }).getByTestId(
+    page.getByTestId("history-card").filter({ hasText: "Первый ролик" }).getByTestId(
       "publication-status",
     ),
   ).toHaveText("опубликовано");

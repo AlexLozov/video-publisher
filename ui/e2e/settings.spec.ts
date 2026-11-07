@@ -9,6 +9,7 @@ test.beforeEach(async ({ request }) => {
 test("settings: Telegram bot setup is saved and survives a reload", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation").getByRole("button", { name: "Настройки" }).click();
+  await page.getByRole("button", { name: /^Telegram/ }).click(); // accordion row
   await expect(page.getByRole("radio", { name: /Бот/ })).toBeChecked();
 
   await page.getByLabel("Канал").fill("@my_test_channel");
@@ -21,6 +22,7 @@ test("settings: Telegram bot setup is saved and survives a reload", async ({ pag
 
   await page.reload();
   await page.getByRole("navigation").getByRole("button", { name: "Настройки" }).click();
+  await page.getByRole("button", { name: /^Telegram/ }).click(); // accordion row
   await expect(page.getByLabel("Канал")).toHaveValue("@my_test_channel");
   await expect(page.getByTestId("telegram_bot_token-status")).toHaveText("задан");
   expect(await page.content()).not.toContain(VALID_TOKEN); // write-only secret
