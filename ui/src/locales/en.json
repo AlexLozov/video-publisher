@@ -44,6 +44,13 @@
     "title": "Settings",
     "loadFailed": "Could not load settings",
     "general": "General",
+    "networks": "Social networks",
+    "networksHint": "Click a network to open its settings.",
+    "state": {
+      "ready": "Set up",
+      "notReady": "Not set up",
+      "soon": "Coming soon"
+    },
     "telegram": {
       "title": "Telegram",
       "mode": "Publishing method",

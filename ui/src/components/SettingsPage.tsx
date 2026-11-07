@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, patchSettings, type SecretName, type Settings, type TelegramMode } from "../api";
 import { errorKey } from "../errors";
 import { SUPPORTED_LANGUAGES, type Language } from "../i18n";
+import { ALL_PLATFORMS, isConfigured, SUPPORTED_PLATFORMS, type PlatformId } from "../platforms";
 import { SecretField } from "./SecretField";
 import { TelegramLogin } from "./TelegramLogin";
 
@@ -15,8 +16,7 @@ interface Props {
 }
 
 export function SettingsPage({ settings, loadError, onSettingsChange, onLanguageChange }: Props) {
-  const { t, i18n } = useTranslation();
-  const languageId = useId();
+  const { t } = useTranslation();
 
   if (loadError) {
     return (
@@ -34,6 +34,22 @@ export function SettingsPage({ settings, loadError, onSettingsChange, onLanguage
       </Card>
     );
   }
+
+  return <Loaded settings={settings} onSettingsChange={onSettingsChange} onLanguageChange={onLanguageChange} />;
+}
+
+function Loaded({
+  settings,
+  onSettingsChange,
+  onLanguageChange,
+}: {
+  settings: Settings;
+  onSettingsChange: (settings: Settings) => void;
+  onLanguageChange: (lng: Language) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const languageId = useId();
+  const [open, setOpen] = useState<PlatformId | null>(null);
 
   const setSecret = (name: SecretName, isSet: boolean) =>
     onSettingsChange({ ...settings, secrets: { ...settings.secrets, [name]: isSet } });
@@ -60,8 +76,86 @@ export function SettingsPage({ settings, loadError, onSettingsChange, onLanguage
         </div>
       </Card>
 
-      <TelegramSection settings={settings} onSaved={onSettingsChange} onSecret={setSecret} />
+      <Card title={t("settings.networks")}>
+        <p className="-mt-2 mb-4 text-xs text-slate-400">{t("settings.networksHint")}</p>
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+          {ALL_PLATFORMS.map((p) => (
+            <PlatformItem
+              key={p}
+              platform={p}
+              settings={settings}
+              open={open === p}
+              onToggle={() => setOpen(open === p ? null : p)}
+            >
+              {p === "telegram" && (
+                <TelegramSection
+                  settings={settings}
+                  onSaved={onSettingsChange}
+                  onSecret={setSecret}
+                />
+              )}
+            </PlatformItem>
+          ))}
+        </ul>
+      </Card>
     </div>
+  );
+}
+
+/** One accordion row: a header with the network's status; settings show only when open. */
+function PlatformItem({
+  platform,
+  settings,
+  open,
+  onToggle,
+  children,
+}: {
+  platform: PlatformId;
+  settings: Settings;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const panelId = useId();
+  const supported = SUPPORTED_PLATFORMS.includes(platform);
+  const configured = isConfigured(settings, platform);
+  const [label, tone] = !supported
+    ? [t("settings.state.soon"), "bg-slate-100 text-slate-500"]
+    : configured
+      ? [t("settings.state.ready"), "bg-emerald-50 text-emerald-700"]
+      : [t("settings.state.notReady"), "bg-amber-50 text-amber-700"];
+
+  return (
+    <li>
+      <h3>
+        <button
+          type="button"
+          disabled={!supported}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={onToggle}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left disabled:cursor-not-allowed"
+        >
+          <span className={"flex-1 text-sm font-medium " + (supported ? "" : "text-slate-400")}>
+            {t(`platform.${platform}`)}
+          </span>
+          <span data-testid={`state-${platform}`} className={`rounded-full px-2 py-0.5 text-xs ${tone}`}>
+            {label}
+          </span>
+          {supported && (
+            <span aria-hidden className={"text-slate-400 transition " + (open ? "rotate-90" : "")}>
+              ›
+            </span>
+          )}
+        </button>
+      </h3>
+      {open && (
+        <div id={panelId} className="border-t border-slate-100 px-4 py-5">
+          {children}
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -133,7 +227,7 @@ function TelegramSection({
   };
 
   return (
-    <Card title={t("settings.telegram.title")}>
+    <>
       <fieldset className="space-y-2">
         <legend className="mb-2 text-sm font-medium">{t("settings.telegram.mode")}</legend>
         <ModeOption
@@ -230,7 +324,7 @@ function TelegramSection({
           </div>
         )}
       </div>
-    </Card>
+    </>
   );
 }
 

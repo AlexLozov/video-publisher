@@ -87,7 +87,7 @@ describe("navigation", () => {
     );
 
     await userEvent.click(within(nav).getByRole("button", { name: "Настройки" }));
-    expect(await screen.findByRole("heading", { name: "Telegram" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^Telegram/ })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: "Настройки" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -180,7 +180,7 @@ describe("language", () => {
       }
       if (page === "settings") {
         await userEvent.click(screen.getByRole("button", { name: "Settings" }));
-        await screen.findByRole("heading", { name: "Telegram" });
+        await userEvent.click(await screen.findByRole("button", { name: /^Telegram/ }));
         // Account mode shows the remaining texts.
         await userEvent.click(screen.getByRole("radio", { name: /My account/ }));
       }

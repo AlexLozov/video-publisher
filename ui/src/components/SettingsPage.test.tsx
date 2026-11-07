@@ -37,12 +37,44 @@ function setup(settings: Settings = makeSettings(), extra: Record<string, Route>
 
 async function openSettings() {
   await userEvent.click(screen.getByRole("button", { name: "Настройки" }));
-  await screen.findByRole("heading", { name: "Telegram" });
+  // Network settings are an accordion: open the Telegram row.
+  await userEvent.click(await screen.findByRole("button", { name: /^Telegram/ }));
 }
 
 const fieldError = (code: string, fields: Record<string, string>) => ({
   status: 422,
   body: { code, params: { fields } },
+});
+
+describe("settings page: networks accordion", () => {
+  it("keeps networks collapsed until one is clicked and shows their state", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "Настройки" }));
+    const tg = await screen.findByRole("button", { name: /^Telegram/ });
+    expect(tg).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("radio", { name: /Бот/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId("state-telegram")).toHaveTextContent("Не настроено");
+    expect(screen.getByRole("button", { name: /^TikTok/ })).toBeDisabled();
+    expect(screen.getByTestId("state-tiktok")).toHaveTextContent("Скоро");
+
+    await userEvent.click(tg);
+    expect(tg).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("radio", { name: /Бот/ })).toBeInTheDocument();
+
+    await userEvent.click(tg);
+    expect(screen.queryByRole("radio", { name: /Бот/ })).not.toBeInTheDocument();
+  });
+
+  it("marks Telegram as set up when the bot has a channel and a token", async () => {
+    setup(
+      makeSettings({
+        telegram: { mode: "bot", channel: "@c", api_id: null },
+        secrets: { telegram_bot_token: true, telegram_api_hash: false, telegram_session: false },
+      }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Настройки" }));
+    expect(await screen.findByTestId("state-telegram")).toHaveTextContent("Настроено");
+  });
 });
 
 describe("settings page: loading", () => {
