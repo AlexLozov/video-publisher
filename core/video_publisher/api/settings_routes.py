@@ -21,6 +21,7 @@ class WritableSecret(StrEnum):
     TELEGRAM_BOT_TOKEN = SecretName.TELEGRAM_BOT_TOKEN.value
     TELEGRAM_API_HASH = SecretName.TELEGRAM_API_HASH.value
     FACEBOOK_APP_SECRET = SecretName.FACEBOOK_APP_SECRET.value
+    YOUTUBE_CLIENT_SECRET = SecretName.YOUTUBE_CLIENT_SECRET.value
 
 
 class SettingsResponse(AppSettings):

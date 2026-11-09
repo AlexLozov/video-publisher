@@ -47,6 +47,12 @@ class PlatformAdapter(ABC):
     def validate(self, video: Video) -> ValidationResult:
         """Check that the video meets the platform requirements."""
 
+    def check_text(self, publication: Publication) -> None:  # noqa: B027
+        """Raise a ``PublishError`` if the title or text break the platform limits.
+
+        Called before the upload starts, so the user can fix the text right away.
+        """
+
     @abstractmethod
     def publish(self, publication: Publication) -> PublishResult:
         """Publish right now."""

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ApiError, startBatch, type Settings } from "../api";
+import { ApiError, fetchVideoInfo, startBatch, type Settings, type VideoInfo } from "../api";
 import {
   ALL_PLATFORMS,
   canScheduleOn,
@@ -18,9 +18,11 @@ interface Props {
   settings: Settings | null;
   onOpenSettings: () => void;
   pollMs?: number;
+  /** Wait after the path changes before reading the file's metadata. */
+  infoDelayMs?: number;
 }
 
-export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
+export function PublishPage({ settings, onOpenSettings, pollMs, infoDelayMs = 300 }: Props) {
   const { t } = useTranslation();
   const desktop = useDesktopApi();
   const ids = {
@@ -66,6 +68,29 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
     setSelected((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
   const telegramOn = selected.includes("telegram");
   const facebookOn = selected.includes("facebook");
+  const youtubeOn = selected.includes("youtube");
+
+  // For YouTube: does the chosen file go out as a Short (vertical or square, up to 3 min)?
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
+  const path = videoPath.trim();
+  useEffect(() => {
+    setVideoInfo(null);
+    if (!youtubeOn || path === "") return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      fetchVideoInfo(path)
+        .then((info) => {
+          if (!cancelled) setVideoInfo(info);
+        })
+        .catch(() => {
+          // not a file (yet) or unreadable: just no hint
+        });
+    }, infoDelayMs);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [youtubeOn, path, infoDelayMs]);
   // The Telegram caption limit matters only when Telegram is ticked.
   const captionTooLong = telegramOn && captionLength > TELEGRAM_CAPTION_LIMIT;
   // Scheduling needs every ticked network to keep the post itself (the app may be off
@@ -161,13 +186,28 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
               <p className="text-xs text-slate-400">{t("publish.pathHint")}</p>
             </>
           )}
-          {(telegramOn || !facebookOn) && (
+          {(telegramOn || (!facebookOn && !youtubeOn)) && (
             <p className="text-xs text-slate-400">
               {accountMode ? t("publish.formatHintAccount") : t("publish.formatHintBot")}
             </p>
           )}
           {facebookOn && (
             <p className="text-xs text-slate-400">{t("publish.formatHintFacebook")}</p>
+          )}
+          {youtubeOn && (
+            <p className="text-xs text-slate-400">{t("publish.formatHintYouTube")}</p>
+          )}
+          {youtubeOn && videoInfo?.youtube_short === true && (
+            <p data-testid="youtube-kind" className="text-xs text-emerald-700">
+              {t("publish.youtubeShort", {
+                seconds: Math.round(videoInfo.duration_seconds ?? 0),
+              })}
+            </p>
+          )}
+          {youtubeOn && videoInfo?.youtube_short === false && (
+            <p data-testid="youtube-kind" className="text-xs text-slate-500">
+              {t("publish.youtubeVideo")}
+            </p>
           )}
         </div>
 
@@ -245,6 +285,10 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
                         : t("settings.telegram.modeBot")}{" "}
                       · {tg.channel}
                     </span>
+                  ) : p === "youtube" && ready && settings ? (
+                    <span data-testid="destination-youtube">
+                      {t("platform.youtube")} · {settings.youtube.channel_title}
+                    </span>
                   ) : p === "facebook" && ready && settings ? (
                     <span data-testid="destination-facebook">
                       {t("platform.facebook")} · {settings.facebook.page_name}
@@ -264,7 +308,8 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
                       (accountMode
                         ? t("publish.notConfiguredAccount")
                         : t("publish.notConfiguredBot"))}
-                    {p === "facebook" && t("publish.notConfiguredFacebook")}{" "}
+                    {p === "facebook" && t("publish.notConfiguredFacebook")}
+                    {p === "youtube" && t("publish.notConfiguredYouTube")}{" "}
                     <button
                       type="button"
                       onClick={onOpenSettings}

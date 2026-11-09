@@ -10,7 +10,7 @@ Flow:
    until ``scheduled_at``) or ``failed`` (with error code and params).
 
 Scheduling is only accepted for adapters that schedule natively (Telegram "my account",
-Facebook Page).
+Facebook Page, YouTube).
 Publishing at a later time from the app itself comes with the scheduler.
 
 If the app is closed during an upload, the row stays ``publishing``; on the next start
@@ -42,6 +42,7 @@ from video_publisher.domain import (
     PublishTarget,
     Video,
 )
+from video_publisher.media.probe import probe
 from video_publisher.platforms.base import PlatformAdapter
 from video_publisher.platforms.errors import PublishError
 from video_publisher.platforms.facebook_page import FacebookPageAdapter
@@ -49,6 +50,7 @@ from video_publisher.platforms.scheduling import check_schedule_time
 from video_publisher.platforms.telegram_account import TelegramAccountAdapter
 from video_publisher.platforms.telegram_bot import TelegramBotAdapter
 from video_publisher.platforms.telegram_mtproto import ClientFactory, default_client_factory
+from video_publisher.platforms.youtube import YouTubeAdapter
 from video_publisher.storage.models import PublicationRow
 from video_publisher.user_settings import SettingsService, TelegramMode
 
@@ -152,6 +154,8 @@ def make_adapter_factory(
     def factory(platform: Platform, settings: SettingsService) -> BuiltAdapter:
         if platform is Platform.FACEBOOK:
             return _facebook_page(settings)
+        if platform is Platform.YOUTUBE:
+            return _youtube(settings)
         if platform is not Platform.TELEGRAM:
             raise PublishError("platform_not_supported", platform=platform.value)
         if settings.get().telegram.mode is TelegramMode.ACCOUNT:
@@ -203,6 +207,36 @@ def _facebook_page(settings: SettingsService) -> BuiltAdapter:
         on_token_invalid=lambda: settings.delete_secret(SecretName.FACEBOOK_PAGE_TOKEN),
     )
     return BuiltAdapter(adapter, "page", fb.page_name or fb.page_id)
+
+
+def _youtube(settings: SettingsService) -> BuiltAdapter:
+    yt = settings.get().youtube
+    secret = settings.get_secret(SecretName.YOUTUBE_CLIENT_SECRET)
+    refresh = settings.get_secret(SecretName.YOUTUBE_REFRESH_TOKEN)
+    missing = [
+        name
+        for name, value in (
+            ("client_id", yt.client_id),
+            ("client_secret", secret),
+            ("login", refresh and yt.channel_id),
+        )
+        if not value
+    ]
+    if missing:
+        raise PublishError("youtube_not_configured", missing=missing)
+    assert yt.client_id is not None and secret is not None and refresh is not None
+    adapter = YouTubeAdapter(
+        client_id=yt.client_id,
+        client_secret=secret,
+        refresh_token=refresh,
+        privacy=yt.privacy.value,
+        made_for_kids=yt.made_for_kids,
+        category_id=yt.category_id,
+        tags=yt.tags,
+        # A revoked or expired login cannot be repaired: Settings ask to log in again.
+        on_token_invalid=lambda: settings.delete_secret(SecretName.YOUTUBE_REFRESH_TOKEN),
+    )
+    return BuiltAdapter(adapter, "channel", yt.channel_title or yt.channel_id)
 
 
 def _telegram_bot(settings: SettingsService) -> BuiltAdapter:
@@ -286,8 +320,15 @@ class PublishingService:
             description=request.description.strip(),
             hashtags=_clean_hashtags(request.hashtags),
         )
+        path = Path(request.video_path.strip())
+        info = probe(path) if path.is_file() else None
         publication = Publication(
-            video=Video(path=Path(request.video_path.strip())),
+            video=Video(
+                path=path,
+                duration_seconds=info.duration_seconds if info else None,
+                width=info.width if info else None,
+                height=info.height if info else None,
+            ),
             target=PublishTarget(
                 platform=request.platform, format=PostFormat.VIDEO, account_id=built.target
             ),
@@ -299,6 +340,7 @@ class PublishingService:
         check = built.adapter.validate(publication.video)
         if not check.ok:
             raise PublishError(check.errors[0], errors=check.errors)
+        built.adapter.check_text(publication)
         if request.scheduled_at is not None:
             if not built.adapter.supports_native_scheduling:
                 raise PublishError("scheduling_not_supported", method=built.method)

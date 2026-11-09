@@ -12,6 +12,8 @@ NO_SECRETS = {
     "telegram_session": False,
     "facebook_app_secret": False,
     "facebook_page_token": False,
+    "youtube_client_secret": False,
+    "youtube_refresh_token": False,
 }
 
 
@@ -22,6 +24,15 @@ def test_get_defaults(client: TestClient) -> None:
         "language": "ru",
         "telegram": {"mode": "bot", "channel": None, "api_id": None},
         "facebook": {"app_id": None, "page_id": None, "page_name": None},
+        "youtube": {
+            "client_id": None,
+            "channel_id": None,
+            "channel_title": None,
+            "privacy": "public",
+            "made_for_kids": False,
+            "category_id": "22",
+            "tags": [],
+        },
         "secrets": NO_SECRETS,
     }
 
@@ -154,3 +165,67 @@ def test_secret_store_unavailable(
     resp = failing_client.request(method, url, json=body)
     assert resp.status_code == 503
     assert resp.json() == {"code": "secret_store_unavailable", "params": {}}
+
+
+# --- YouTube ------------------------------------------------------------------------------
+
+CLIENT_ID = "123456789012-abcdefghij0123456789.apps.googleusercontent.com"
+
+
+def test_patch_youtube_defaults(client: TestClient) -> None:
+    resp = client.patch(
+        "/api/settings",
+        json={
+            "youtube": {
+                "client_id": f"  {CLIENT_ID} ",
+                "privacy": "unlisted",
+                "made_for_kids": True,
+                "category_id": "27",
+                "tags": [" #cats", "cats", "funny cats", ""],
+            }
+        },
+    )
+    assert resp.status_code == 200
+    yt = resp.json()["youtube"]
+    assert yt["client_id"] == CLIENT_ID
+    assert yt["privacy"] == "unlisted"
+    assert yt["made_for_kids"] is True
+    assert yt["category_id"] == "27"
+    assert yt["tags"] == ["cats", "funny cats"]
+    # A partial patch keeps the rest.
+    client.patch("/api/settings", json={"youtube": {"privacy": "public"}})
+    assert client.get("/api/settings").json()["youtube"]["tags"] == ["cats", "funny cats"]
+
+
+@pytest.mark.parametrize(
+    ("body", "field", "code"),
+    [
+        ({"client_id": "not-a-client"}, "body.youtube.client_id", "invalid_client_id"),
+        ({"category_id": "99"}, "body.youtube.category_id", "invalid_category"),
+        ({"tags": ["a<b"]}, "body.youtube.tags", "invalid_tag"),
+        (
+            {"tags": [f"{i}" + "x" * 60 for i in range(9)]},
+            "body.youtube.tags",
+            "youtube_tags_too_long",
+        ),
+        ({"privacy": "secret"}, "body.youtube.privacy", "enum"),
+    ],
+)
+def test_patch_youtube_invalid(
+    client: TestClient, body: dict[str, object], field: str, code: str
+) -> None:
+    resp = client.patch("/api/settings", json={"youtube": body})
+    assert resp.status_code == 422
+    assert resp.json()["params"]["fields"][field] == code
+
+
+def test_youtube_client_secret_write_only(client: TestClient) -> None:
+    resp = client.put(
+        "/api/secrets/youtube_client_secret", json={"value": "GOCSPX-abcdefghijklmnop12"}
+    )
+    assert resp.status_code == 204
+    assert client.get("/api/settings").json()["secrets"]["youtube_client_secret"] is True
+    bad = client.put("/api/secrets/youtube_client_secret", json={"value": "short"})
+    assert bad.json()["code"] == "invalid_client_secret"
+    # The refresh token comes only from logging in.
+    assert client.put("/api/secrets/youtube_refresh_token", json={"value": "x"}).status_code == 422

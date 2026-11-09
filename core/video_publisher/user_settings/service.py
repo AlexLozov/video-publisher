@@ -28,6 +28,10 @@ _SECRET_FORMATS: dict[SecretName, tuple[re.Pattern[str], str]] = {
     ),
     SecretName.TELEGRAM_API_HASH: (re.compile(r"^[0-9a-f]{32}$"), "invalid_api_hash"),
     SecretName.FACEBOOK_APP_SECRET: (re.compile(r"^[0-9a-f]{32}$"), "invalid_app_secret"),
+    SecretName.YOUTUBE_CLIENT_SECRET: (
+        re.compile(r"^[A-Za-z0-9_-]{20,80}$"),
+        "invalid_client_secret",
+    ),
 }
 
 
@@ -86,6 +90,17 @@ class SettingsService:
         new = current.model_copy(update={"facebook": facebook})
         with self._sessions.begin() as session:
             session.merge(SettingRow(key="facebook", value=facebook.model_dump(mode="json")))
+        return new
+
+    def set_youtube_channel(self, channel_id: str | None, title: str | None) -> AppSettings:
+        """Remember the channel found at login (or forget it on logout)."""
+        current = self.get()
+        youtube = current.youtube.model_copy(
+            update={"channel_id": channel_id, "channel_title": title}
+        )
+        new = current.model_copy(update={"youtube": youtube})
+        with self._sessions.begin() as session:
+            session.merge(SettingRow(key="youtube", value=youtube.model_dump(mode="json")))
         return new
 
     @staticmethod

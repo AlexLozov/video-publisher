@@ -323,7 +323,9 @@ def test_real_listener_serves_callback() -> None:
         seen.append(query)
         return query.get("code") == "c"
 
-    listener = CallbackListener(0, handle, lambda: CALLBACK_TEXTS["en"])
+    listener = CallbackListener(
+        0, handle, lambda: CALLBACK_TEXTS["en"], path=CALLBACK_PATH, busy_code="facebook_port_busy"
+    )
     try:
         base = f"http://127.0.0.1:{listener.port}"
         with respx.mock(assert_all_mocked=False) as router:
@@ -340,10 +342,22 @@ def test_real_listener_serves_callback() -> None:
 
 
 def test_port_busy() -> None:
-    first = CallbackListener(0, lambda _: True, lambda: CALLBACK_TEXTS["en"])
+    first = CallbackListener(
+        0,
+        lambda _: True,
+        lambda: CALLBACK_TEXTS["en"],
+        path=CALLBACK_PATH,
+        busy_code="facebook_port_busy",
+    )
     try:
         with pytest.raises(PublishError) as exc:
-            CallbackListener(first.port, lambda _: True, lambda: CALLBACK_TEXTS["en"])
+            CallbackListener(
+                first.port,
+                lambda _: True,
+                lambda: CALLBACK_TEXTS["en"],
+                path=CALLBACK_PATH,
+                busy_code="facebook_port_busy",
+            )
         assert exc.value.code == "facebook_port_busy"
     finally:
         first.stop()

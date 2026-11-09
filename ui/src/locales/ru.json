@@ -102,6 +102,40 @@
         "logout": "Выйти",
         "stored": "Токен страницы хранится в Диспетчере учётных данных Windows. Пароль от Facebook приложение не видит."
       }
+    },
+    "youtube": {
+      "intro": "Нужен ваш проект в Google Cloud с включённым YouTube Data API v3 и OAuth-клиент типа «Desktop app». Пока проект в режиме тестирования, войти может только аккаунт из списка Test users.",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "clientSecretHint": "Google Cloud → Google Auth Platform → Clients → ваш клиент «Desktop app».",
+      "auditHint": "Пока проект Google не прошёл проверку YouTube, все загруженные через API видео остаются ограниченными (видны только вам), а вход нужно повторять раз в 7 дней.",
+      "login": {
+        "title": "Вход через Google",
+        "needKeys": "Сначала сохраните Client ID и Client Secret — без них войти нельзя.",
+        "start": "Войти через Google",
+        "waiting": "Открылся браузер. Выберите аккаунт с каналом и разрешите доступ к YouTube — приложение дождётся.",
+        "cancel": "Отмена",
+        "loggedIn": "Вход выполнен. Канал: {{channel}}",
+        "logout": "Выйти",
+        "stored": "Ключ входа хранится в Диспетчере учётных данных Windows. Пароль от Google приложение не видит."
+      },
+      "defaults": {
+        "title": "Настройки видео по умолчанию",
+        "privacy": "Доступ",
+        "privacyHint": "Для публикации по расписанию YouTube загружает видео ограниченным и сам открывает его в назначенное время.",
+        "kids": "Видео для детей?",
+        "kidsNo": "Нет",
+        "kidsYes": "Да",
+        "category": "Категория",
+        "tags": "Теги",
+        "tagsPlaceholder": "путешествия, горы, влог",
+        "tagsHint": "Через запятую. Вместе — не больше 500 символов. Хэштеги с экрана публикации попадают в описание."
+      },
+      "privacy": {
+        "public": "Открытый доступ",
+        "unlisted": "Доступ по ссылке",
+        "private": "Ограниченный доступ"
+      }
     }
   },
   "secret": {
@@ -119,7 +153,11 @@
     "enum": "Недопустимое значение",
     "string_too_short": "Поле не может быть пустым",
     "default": "Неверное значение",
-    "invalid_app_id": "App ID — это число из 5–20 цифр"
+    "invalid_app_id": "App ID — это число из 5–20 цифр",
+    "invalid_client_id": "Client ID выглядит как 123456789012-….apps.googleusercontent.com",
+    "invalid_category": "Выберите категорию из списка",
+    "invalid_tag": "В тегах нельзя использовать символы < > и запятую внутри тега",
+    "youtube_tags_too_long": "Теги вместе длиннее 500 символов. Уберите часть тегов."
   },
   "errors": {
     "not_found": "Не найдено",
@@ -193,7 +231,32 @@
     "facebook_unsupported_format": "Нужен файл MP4. Перекодируйте видео в MP4 и попробуйте снова.",
     "facebook_file_too_large": "Файл больше 1 ГБ ({{size_mb}} МБ). Facebook при загрузке одним файлом принимает до {{max_mb}} МБ.",
     "facebook_title_too_long": "Заголовок длиннее {{max}} символов ({{length}}). Сократите его.",
-    "unknown": "Неизвестная ошибка"
+    "unknown": "Неизвестная ошибка",
+    "invalid_client_secret": "Это не похоже на Client Secret. Скопируйте его из Google Cloud (обычно начинается с GOCSPX-).",
+    "youtube_already_logged_in": "Вход в YouTube уже выполнен. Чтобы сменить канал, сначала выйдите.",
+    "youtube_app_not_configured": "Сначала сохраните Client ID и Client Secret в настройках YouTube.",
+    "youtube_not_configured": "YouTube не настроен: нужен вход через Google в настройках.",
+    "youtube_client_invalid": "Google не принял Client ID или Client Secret. Проверьте их в настройках YouTube.",
+    "youtube_login_denied": "Вход отменён в браузере. Попробуйте ещё раз и разрешите доступ к YouTube.",
+    "youtube_scope_missing": "При входе не была отмечена галочка доступа к YouTube. Войдите снова и отметьте её.",
+    "youtube_no_refresh_token": "Google не выдал ключ для постоянного входа. Выйдите и войдите снова.",
+    "youtube_no_channel": "У этого аккаунта Google нет канала YouTube. Создайте канал на youtube.com или войдите другим аккаунтом.",
+    "youtube_port_busy": "Не удалось открыть порт для входа через Google. Закройте лишние программы и попробуйте снова.",
+    "youtube_token_invalid": "Вход в YouTube больше не действует (отозван или истёк). Войдите заново в настройках.",
+    "youtube_unavailable": "YouTube временно недоступен. Попробуйте позже.",
+    "youtube_rate_limited": "YouTube просит подождать: слишком много запросов. Попробуйте позже.",
+    "youtube_quota_exceeded": "Исчерпана дневная квота YouTube API вашего проекта Google (примерно 6 загрузок в день). Попробуйте завтра.",
+    "youtube_upload_limit": "YouTube временно ограничил загрузки на этом канале. Попробуйте позже.",
+    "youtube_api_disabled": "В проекте Google не включён YouTube Data API v3. Включите его в Google Cloud.",
+    "youtube_permission_denied": "YouTube отказал в доступе. Проверьте канал и разрешения при входе.",
+    "youtube_video_not_found": "Видео не найдено на YouTube.",
+    "youtube_rejected": "YouTube отклонил запрос.",
+    "youtube_unsupported_format": "Для YouTube нужен файл MP4.",
+    "youtube_file_too_large": "Файл больше 256 ГБ — YouTube такие не принимает.",
+    "youtube_title_too_long": "Заголовок для YouTube длиннее {{max}} символов ({{length}}). Сократите его.",
+    "youtube_description_too_long": "Описание для YouTube длиннее {{max}} байт ({{length}}). Сократите текст или хэштеги.",
+    "youtube_angle_brackets": "YouTube не принимает символы < и > в заголовке и описании.",
+    "youtube_timeout_uncertain": "Связь оборвалась во время загрузки на YouTube. Видео могло загрузиться — проверьте канал в YouTube Studio, прежде чем публиковать снова."
   },
   "publish": {
     "title": "Новая публикация",
@@ -219,10 +282,14 @@
     "now": "Сейчас",
     "later": "По расписанию",
     "scheduleAt": "Дата и время публикации",
-    "scheduleHint": "Пост сохранит сама соцсеть и опубликует в это время, даже если компьютер выключен. Telegram — до 365 дней вперёд, Facebook — от 10 минут до 30 дней.",
+    "scheduleHint": "Пост сохранит сама соцсеть и опубликует в это время, даже если компьютер выключен. Telegram — до 365 дней вперёд, Facebook — от 10 минут до 30 дней, YouTube — от 15 минут до 365 дней.",
     "schedule": "Запланировать",
     "formatHintFacebook": "Для Facebook: MP4 до 1 ГБ.",
-    "notConfiguredFacebook": "Facebook не настроен: нужен вход через Facebook."
+    "notConfiguredFacebook": "Facebook не настроен: нужен вход через Facebook.",
+    "formatHintYouTube": "Для YouTube: MP4. Вертикальное или квадратное видео до 3 минут YouTube покажет как Shorts.",
+    "youtubeShort": "YouTube: уйдёт как Shorts (вертикальное, {{seconds}} с).",
+    "youtubeVideo": "YouTube: уйдёт как обычное видео.",
+    "notConfiguredYouTube": "YouTube не настроен: нужен вход через Google."
   },
   "publications": {
     "title": "Публикации",
@@ -261,5 +328,22 @@
       "url": "Ссылка",
       "error": "Ошибка"
     }
+  },
+  "youtubeCategory": {
+    "1": "Фильмы и анимация",
+    "2": "Автомобили и транспорт",
+    "10": "Музыка",
+    "15": "Животные",
+    "17": "Спорт",
+    "19": "Путешествия и события",
+    "20": "Видеоигры",
+    "22": "Люди и блоги",
+    "23": "Юмор",
+    "24": "Развлечения",
+    "25": "Новости и политика",
+    "26": "Хобби и стиль",
+    "27": "Образование",
+    "28": "Наука и техника",
+    "29": "Некоммерческие и общественные организации"
   }
 }

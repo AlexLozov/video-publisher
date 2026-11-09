@@ -6,6 +6,7 @@ import { errorKey } from "../errors";
 import { SUPPORTED_LANGUAGES, type Language } from "../i18n";
 import { ALL_PLATFORMS, isConfigured, SUPPORTED_PLATFORMS, type PlatformId } from "../platforms";
 import { FacebookSection } from "./FacebookSection";
+import { YouTubeSection } from "./YouTubeSection";
 import { SecretField } from "./SecretField";
 import { TelegramLogin } from "./TelegramLogin";
 
@@ -90,6 +91,13 @@ function Loaded({
             >
               {p === "telegram" && (
                 <TelegramSection
+                  settings={settings}
+                  onSaved={onSettingsChange}
+                  onSecret={setSecret}
+                />
+              )}
+              {p === "youtube" && (
+                <YouTubeSection
                   settings={settings}
                   onSaved={onSettingsChange}
                   onSecret={setSecret}

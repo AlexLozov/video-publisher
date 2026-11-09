@@ -8,6 +8,8 @@ export const NO_SECRETS: Record<SecretName, boolean> = {
   telegram_session: false,
   facebook_app_secret: false,
   facebook_page_token: false,
+  youtube_client_secret: false,
+  youtube_refresh_token: false,
 };
 
 type SettingsOverrides = Partial<Omit<Settings, "secrets">> & {
@@ -21,6 +23,15 @@ export function makeSettings(overrides: SettingsOverrides = {}): Settings {
     language: "ru",
     telegram: { mode: "bot", channel: null, api_id: null },
     facebook: { app_id: null, page_id: null, page_name: null },
+    youtube: {
+      client_id: null,
+      channel_id: null,
+      channel_title: null,
+      privacy: "public",
+      made_for_kids: false,
+      category_id: "22",
+      tags: [],
+    },
     ...rest,
     secrets: { ...NO_SECRETS, ...secrets },
   };
