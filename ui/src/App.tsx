@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchSettings, patchSettings, type Settings } from "./api";
+import { fetchSettings, patchSettings, verifyYouTubeLogin, type Settings } from "./api";
 import { HomePage } from "./components/HomePage";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { PublishPage } from "./components/PublishPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { errorKey } from "./errors";
 import i18n, { setLanguage, type Language } from "./i18n";
+import { isConfigured } from "./platforms";
 
 type Page = "home" | "publish" | "settings";
 
@@ -27,6 +28,34 @@ export default function App() {
       })
       .catch((err: unknown) => setSettingsError(errorKey(err)));
   }, []);
+
+  // A YouTube login can die on Google's side (7 days in "Testing", revoked access). Check it
+  // when the app starts and when the upload or settings screen opens, so YouTube shows as
+  // not set up right away instead of failing in the middle of an upload.
+  const youtubeReady = isConfigured(settings, "youtube");
+  useEffect(() => {
+    if (!youtubeReady || page === "home") return;
+    let cancelled = false;
+    verifyYouTubeLogin()
+      .then((status) => {
+        if (cancelled || status.state === "logged_in") return;
+        setSettings((s) =>
+          s
+            ? {
+                ...s,
+                youtube: { ...s.youtube, channel_id: null, channel_title: null },
+                secrets: { ...s.secrets, youtube_refresh_token: false },
+              }
+            : s,
+        );
+      })
+      .catch(() => {
+        // offline: keep things as they are, the upload itself reports problems
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [youtubeReady, page]);
 
   const changeLanguage = useCallback(async (lng: Language) => {
     await setLanguage(lng);

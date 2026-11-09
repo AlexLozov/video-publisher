@@ -253,6 +253,9 @@ export interface YouTubeLoginStatus {
 
 const YT_LOGIN = "/api/youtube/account";
 export const fetchYouTubeLogin = () => request<YouTubeLoginStatus>(YT_LOGIN);
+/** The status after checking with Google that the stored login still works. */
+export const verifyYouTubeLogin = () =>
+  request<YouTubeLoginStatus>(`${YT_LOGIN}/verify`, { method: "POST" });
 export const startYouTubeLogin = () =>
   request<YouTubeLoginStatus>(`${YT_LOGIN}/login`, { method: "POST" });
 export const cancelYouTubeLogin = () =>

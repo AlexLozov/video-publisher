@@ -33,6 +33,9 @@ class PlatformAdapter(ABC):
     max_schedule_ahead: ClassVar[timedelta] = timedelta(0)
     # How soon ``schedule`` accepts a time; platforms may require more than the default.
     min_schedule_lead: ClassVar[timedelta] = timedelta(minutes=1)
+    # Call ``authenticate`` before anything is uploaded, so a dead login stops the whole
+    # upload (all networks) instead of failing later for this network only.
+    check_login_before_start: ClassVar[bool] = False
 
     @property
     @abstractmethod

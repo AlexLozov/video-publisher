@@ -14,6 +14,12 @@ Flow (OAuth for desktop apps, the user's own Google Cloud project, "Desktop app"
 
 Errors from the callback (user cancelled, unticked the YouTube permission, no channel...)
 are kept as ``error`` in the status, because they happen in the listener thread.
+
+``verify()`` checks that the stored login still works (the refresh token is exchanged for
+an access token). Google revokes refresh tokens after 7 days while the consent screen is
+in "Testing", after 6 months without use, or when the user withdraws access. A dead
+token is deleted, so Settings and the upload screen show YouTube as not set up right away
+instead of failing at the next upload. The answer is cached for a few minutes.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ import base64
 import hashlib
 import secrets
 import threading
+import time
 import webbrowser
 from collections.abc import Callable
 from enum import StrEnum
@@ -39,6 +46,8 @@ AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 CALLBACK_PATH = "/"
 # One scope covers upload, reading the channel and deleting a scheduled video.
 SCOPE = "https://www.googleapis.com/auth/youtube"
+# How long a successful ``verify()`` is trusted before asking Google again.
+VERIFY_TTL_SECONDS = 300.0
 
 
 class YouTubeLoginState(StrEnum):
@@ -87,6 +96,7 @@ class YouTubeLoginService:
         open_browser: Callable[[str], object] = webbrowser.open,
         listener_factory: ListenerFactory = _google_listener,
         auth_url: str = AUTH_URL,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._settings = settings
         self._google = google or GoogleClient()
@@ -99,6 +109,8 @@ class YouTubeLoginService:
         self._verifier: str | None = None
         self._redirect_uri: str | None = None
         self._error: str | None = None
+        self._clock = clock
+        self._verified_at: float | None = None
 
     # --- state ------------------------------------------------------------------------
 
@@ -116,6 +128,42 @@ class YouTubeLoginService:
                 else YouTubeLoginState.LOGGED_OUT
             )
             return YouTubeLoginStatus(state=state, error=self._error)
+
+    def verify(self) -> YouTubeLoginStatus:
+        """The status, after checking with Google that the stored login still works.
+
+        Only a refused token (``invalid_grant``) logs out. Without network or with Google
+        down the login is kept as it is: the next check or upload tries again.
+        """
+        status = self.status()
+        if status.state is not YouTubeLoginState.LOGGED_IN:
+            return status
+        now = self._clock()
+        if self._verified_at is not None and now - self._verified_at < VERIFY_TTL_SECONDS:
+            return status
+        refresh = self._settings.get_secret(SecretName.YOUTUBE_REFRESH_TOKEN)
+        try:
+            client_id, secret = self._credentials()
+            assert refresh is not None
+            self._google.token(
+                {
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh,
+                    "client_id": client_id,
+                    "client_secret": secret,
+                }
+            )
+        except PublishError as exc:
+            if exc.code != "youtube_token_invalid":
+                return status
+            self._settings.delete_secret(SecretName.YOUTUBE_REFRESH_TOKEN)
+            self._settings.set_youtube_channel(None, None)
+            with self._lock:
+                self._error = exc.code
+                self._verified_at = None
+            return self.status()
+        self._verified_at = now
+        return status
 
     def _credentials(self) -> tuple[str, str]:
         client_id = self._settings.get().youtube.client_id
@@ -215,6 +263,7 @@ class YouTubeLoginService:
         title = str((channel.get("snippet") or {}).get("title") or channel["id"])
         self._settings.set_secret(SecretName.YOUTUBE_REFRESH_TOKEN, str(refresh))
         self._settings.set_youtube_channel(str(channel["id"]), title)
+        self._verified_at = self._clock()
 
     def cancel(self) -> YouTubeLoginStatus:
         with self._lock:
@@ -225,6 +274,7 @@ class YouTubeLoginService:
     def logout(self) -> YouTubeLoginStatus:
         """Forget the refresh token and the channel (the Google client keys stay)."""
         self.cancel()
+        self._verified_at = None
         self._settings.delete_secret(SecretName.YOUTUBE_REFRESH_TOKEN)
         self._settings.set_youtube_channel(None, None)
         return self.status()
