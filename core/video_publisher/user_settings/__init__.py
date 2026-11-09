@@ -9,6 +9,9 @@ from video_publisher.user_settings.models import (
     TelegramMode,
     TelegramPatch,
     TelegramSettings,
+    YouTubePatch,
+    YouTubePrivacy,
+    YouTubeSettings,
 )
 from video_publisher.user_settings.service import SettingsService, build_settings_service
 
@@ -22,5 +25,8 @@ __all__ = [
     "TelegramMode",
     "TelegramPatch",
     "TelegramSettings",
+    "YouTubePatch",
+    "YouTubePrivacy",
+    "YouTubeSettings",
     "build_settings_service",
 ]

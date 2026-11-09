@@ -249,6 +249,9 @@ class FacebookPageAdapter(PlatformAdapter):
                     "size_mb": round(video.path.stat().st_size / (1024 * 1024), 1),
                 }
             raise PublishError(code, **params)
+        self.check_text(publication)
+
+    def check_text(self, publication: Publication) -> None:
         title = publication.text.title.strip()
         if len(title) > MAX_TITLE:
             raise PublishError("facebook_title_too_long", max=MAX_TITLE, length=len(title))

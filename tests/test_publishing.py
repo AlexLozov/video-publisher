@@ -285,7 +285,8 @@ def test_factory_reports_missing_settings(
 
 
 @pytest.mark.parametrize(
-    "platform", [p for p in Platform if p not in (Platform.TELEGRAM, Platform.FACEBOOK)]
+    "platform",
+    [p for p in Platform if p not in (Platform.TELEGRAM, Platform.FACEBOOK, Platform.YOUTUBE)],
 )
 def test_factory_other_platforms_not_supported(
     settings_service: SettingsService, platform: Platform
@@ -433,7 +434,7 @@ def test_platforms_endpoint_marks_working_platforms() -> None:
     with TestClient(create_app()) as client:
         data = client.get("/api/platforms").json()
     assert {p["id"]: p["available"] for p in data} == {
-        "youtube": False,
+        "youtube": True,
         "tiktok": False,
         "instagram": False,
         "facebook": True,

@@ -14,8 +14,10 @@ from video_publisher.api.facebook_routes import router as facebook_router
 from video_publisher.api.publication_routes import router as publication_router
 from video_publisher.api.settings_routes import router as settings_router
 from video_publisher.api.telegram_account_routes import router as telegram_account_router
+from video_publisher.api.youtube_routes import router as youtube_router
 from video_publisher.auth.facebook_login import FacebookLoginService
 from video_publisher.auth.telegram_login import TelegramLoginService
+from video_publisher.auth.youtube_login import YouTubeLoginService
 from video_publisher.config import get_settings
 from video_publisher.domain import Platform
 from video_publisher.platforms import PlatformRegistry
@@ -44,6 +46,7 @@ def create_app(
     publishing_service: PublishingService | None = None,
     telegram_client_factory: ClientFactory = default_client_factory,
     facebook_login_service: FacebookLoginService | None = None,
+    youtube_login_service: YouTubeLoginService | None = None,
 ) -> FastAPI:
     """Build the API app. If ``ui_dist_dir`` exists, the built UI is served at ``/``.
 
@@ -71,6 +74,9 @@ def create_app(
             settings_service, redirect_port=get_settings().facebook_redirect_port
         )
     closers.insert(0, facebook_login_service.shutdown)
+    if youtube_login_service is None:
+        youtube_login_service = YouTubeLoginService(settings_service)
+    closers.insert(0, youtube_login_service.shutdown)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -90,6 +96,8 @@ def create_app(
     app.include_router(telegram_account_router)
     app.state.facebook_login_service = facebook_login_service
     app.include_router(facebook_router)
+    app.state.youtube_login_service = youtube_login_service
+    app.include_router(youtube_router)
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:

@@ -1,11 +1,13 @@
 """Publishing endpoints: start a publication and follow its status."""
 
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel
 
 from video_publisher.api.errors import ApiError
+from video_publisher.media.probe import probe
 from video_publisher.platforms.errors import PublishError
 from video_publisher.publishing import (
     BatchPublishRequest,
@@ -44,6 +46,33 @@ def start_batch(body: BatchPublishRequest, service: Service) -> list[Publication
         return service.start_batch(body)
     except PublishError as exc:
         raise ApiError(exc.code, status_code=422, **exc.params) from exc
+
+
+class VideoInfoView(BaseModel):
+    """What the upload screen shows about the chosen file (unknown values are null)."""
+
+    duration_seconds: float | None
+    width: int | None
+    height: int | None
+    # Vertical or square and up to 3 minutes: YouTube shows it as a Short.
+    youtube_short: bool | None
+
+
+@router.get("/video-info", response_model=VideoInfoView)
+def video_info(path: Annotated[str, Query(min_length=1, max_length=4096)]) -> VideoInfoView:
+    """Duration and frame size of the chosen file (read locally, nothing is uploaded)."""
+    file = Path(path.strip())
+    if not file.is_file():
+        raise ApiError("video_not_found", status_code=404)
+    info = probe(file)
+    if info is None:
+        return VideoInfoView(duration_seconds=None, width=None, height=None, youtube_short=None)
+    return VideoInfoView(
+        duration_seconds=info.duration_seconds,
+        width=info.width,
+        height=info.height,
+        youtube_short=info.is_youtube_short,
+    )
 
 
 @router.get("", response_model=list[PublicationView])

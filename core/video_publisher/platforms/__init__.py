@@ -6,10 +6,12 @@ from video_publisher.platforms.facebook_page import FacebookPageAdapter
 from video_publisher.platforms.registry import PlatformRegistry, registry
 from video_publisher.platforms.telegram_account import TelegramAccountAdapter
 from video_publisher.platforms.telegram_bot import TelegramBotAdapter
+from video_publisher.platforms.youtube import YouTubeAdapter
 
 # Platforms that can publish. The UI shows the others as "in development".
 registry.register(TelegramBotAdapter)
 registry.register(FacebookPageAdapter)
+registry.register(YouTubeAdapter)
 
 __all__ = [
     "FacebookPageAdapter",
@@ -20,5 +22,6 @@ __all__ = [
     "TelegramAccountAdapter",
     "TelegramBotAdapter",
     "ValidationResult",
+    "YouTubeAdapter",
     "registry",
 ]

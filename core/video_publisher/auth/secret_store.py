@@ -21,6 +21,9 @@ class SecretName(StrEnum):
     FACEBOOK_APP_SECRET = "facebook_app_secret"
     # Written by the Facebook login flow: a page token that does not expire.
     FACEBOOK_PAGE_TOKEN = "facebook_page_token"
+    YOUTUBE_CLIENT_SECRET = "youtube_client_secret"
+    # Written by the Google login flow: lets the app get access tokens without a new login.
+    YOUTUBE_REFRESH_TOKEN = "youtube_refresh_token"
 
 
 class SecretStoreError(Exception):
