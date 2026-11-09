@@ -121,7 +121,8 @@ describe("publish page: destination", () => {
   ])("offers settings when not configured (%s)", async (_name, settings) => {
     const { onOpenSettings } = setup({}, settings);
     expect(screen.getByText("Telegram-бот не настроен.")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Открыть настройки" }));
+    // Telegram's link comes first (Facebook, not set up either, has its own).
+    await userEvent.click(screen.getAllByRole("button", { name: "Открыть настройки" })[0]);
     expect(onOpenSettings).toHaveBeenCalledOnce();
   });
 });
@@ -135,7 +136,8 @@ describe("publish page: choosing networks", () => {
       expect(screen.getByTestId(`network-${p}`)).toBeDisabled();
       expect(screen.getByTestId(`network-${p}`)).not.toBeChecked();
     }
-    expect(screen.getAllByText("Скоро")).toHaveLength(4);
+    expect(screen.getAllByText("Скоро")).toHaveLength(3);
+    expect(screen.getByText(/Facebook не настроен/)).toBeInTheDocument();
   });
 
   it("leaves a network that is not set up unticked", () => {
@@ -459,5 +461,40 @@ describe("publication list: scheduled", () => {
       `запланировано на ${expected}`,
     );
     expect(screen.queryByText("Открыть пост")).not.toBeInTheDocument();
+  });
+});
+
+const FACEBOOK = makeSettings({
+  ...CONFIGURED,
+  facebook: { app_id: "123456789012", page_id: "55", page_name: "My Page" },
+  secrets: { ...CONFIGURED.secrets, facebook_app_secret: true, facebook_page_token: true },
+});
+
+describe("publish page: facebook", () => {
+  it("ticks a logged-in Facebook page and shows its name and limit", () => {
+    setup({}, FACEBOOK);
+    expect(screen.getByTestId("network-facebook")).toBeChecked();
+    expect(screen.getByTestId("destination-facebook")).toHaveTextContent(
+      "Страница Facebook · My Page",
+    );
+    expect(screen.getByText("Для Facebook: MP4 до 1 ГБ.")).toBeInTheDocument();
+  });
+
+  it("offers scheduling only when every ticked network can keep the post", async () => {
+    setup({}, FACEBOOK);
+    // Telegram bot is ticked too: it cannot hold a scheduled post.
+    expect(screen.queryByText("По расписанию")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    expect(screen.getByText("По расписанию")).toBeInTheDocument();
+  });
+
+  it("ignores the Telegram caption limit when only Facebook is ticked", async () => {
+    setup({}, FACEBOOK);
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\a.mp4");
+    const long = "x".repeat(1100);
+    await userEvent.click(screen.getByLabelText("Текст"));
+    await userEvent.paste(long);
+    expect(screen.getByRole("button", { name: "Опубликовать сейчас" })).toBeEnabled();
   });
 });
