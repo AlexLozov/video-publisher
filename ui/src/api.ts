@@ -19,12 +19,27 @@ export interface TelegramSettings {
   api_id: number | null;
 }
 
-export type SecretName = "telegram_bot_token" | "telegram_api_hash" | "telegram_session";
-export type WritableSecret = Exclude<SecretName, "telegram_session">;
+export interface FacebookSettings {
+  /** The user's own Meta app (the App Secret is a secret). */
+  app_id: string | null;
+  /** Filled in by logging in with Facebook. */
+  page_id: string | null;
+  page_name: string | null;
+}
+
+export type SecretName =
+  | "telegram_bot_token"
+  | "telegram_api_hash"
+  | "telegram_session"
+  | "facebook_app_secret"
+  | "facebook_page_token";
+/** Sessions and page tokens come from login flows, never typed in. */
+export type WritableSecret = Exclude<SecretName, "telegram_session" | "facebook_page_token">;
 
 export interface Settings {
   language: Language;
   telegram: TelegramSettings;
+  facebook: FacebookSettings;
   /** Only whether each secret is set; values never leave the backend. */
   secrets: Record<SecretName, boolean>;
 }
@@ -32,6 +47,7 @@ export interface Settings {
 export interface SettingsPatch {
   language?: Language;
   telegram?: Partial<TelegramSettings>;
+  facebook?: { app_id?: string | null };
 }
 
 /**
@@ -172,3 +188,33 @@ export const cancelTelegramLogin = () =>
   request<TelegramLoginStatus>(`${LOGIN}/cancel`, { method: "POST" });
 export const logoutTelegram = () =>
   request<TelegramLoginStatus>(`${LOGIN}/logout`, { method: "POST" });
+
+/** Logging in with Facebook: the browser opens, the user picks a page. */
+export type FacebookLoginState = "logged_out" | "waiting" | "choose_page" | "logged_in";
+
+export interface FacebookPage {
+  id: string;
+  name: string;
+}
+
+export interface FacebookLoginStatus {
+  state: FacebookLoginState;
+  page: FacebookPage | null;
+  /** Pages to choose from (only in `choose_page`). */
+  pages: FacebookPage[];
+  /** Goes into "Valid OAuth Redirect URIs" of the Meta app. */
+  redirect_uri: string;
+  /** Why the last attempt failed (an `errors.<code>` key). */
+  error: string | null;
+}
+
+const FB_LOGIN = "/api/facebook/account";
+export const fetchFacebookLogin = () => request<FacebookLoginStatus>(FB_LOGIN);
+export const startFacebookLogin = () =>
+  request<FacebookLoginStatus>(`${FB_LOGIN}/login`, { method: "POST" });
+export const selectFacebookPage = (page_id: string) =>
+  request<FacebookLoginStatus>(`${FB_LOGIN}/select-page`, { method: "POST", body: { page_id } });
+export const cancelFacebookLogin = () =>
+  request<FacebookLoginStatus>(`${FB_LOGIN}/cancel`, { method: "POST" });
+export const logoutFacebook = () =>
+  request<FacebookLoginStatus>(`${FB_LOGIN}/logout`, { method: "POST" });

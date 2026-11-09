@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import html
 import secrets
+import socket
 import threading
 import webbrowser
 from collections.abc import Callable
@@ -93,6 +94,21 @@ class _Page:
     token: str
 
 
+class _ExclusiveServer(ThreadingHTTPServer):
+    """Fails when the port is taken. The stock server sets SO_REUSEADDR, which on Windows
+    lets a second program bind the same port silently, so the redirect could go elsewhere.
+    """
+
+    allow_reuse_address = False
+    daemon_threads = True
+
+    def server_bind(self) -> None:
+        exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+        if exclusive is not None:  # Windows only
+            self.socket.setsockopt(socket.SOL_SOCKET, exclusive, 1)
+        super().server_bind()
+
+
 class CallbackListener:
     """A tiny HTTP server for the OAuth redirect; runs until stopped."""
 
@@ -130,7 +146,7 @@ class CallbackListener:
                 pass  # the query string holds the OAuth code: never log it
 
         try:
-            self._server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+            self._server = _ExclusiveServer(("127.0.0.1", port), Handler)
         except OSError as exc:
             raise PublishError("facebook_port_busy", port=port) from exc
         self.port = int(self._server.server_address[1])
