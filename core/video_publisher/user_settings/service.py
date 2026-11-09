@@ -27,6 +27,7 @@ _SECRET_FORMATS: dict[SecretName, tuple[re.Pattern[str], str]] = {
         "invalid_bot_token",
     ),
     SecretName.TELEGRAM_API_HASH: (re.compile(r"^[0-9a-f]{32}$"), "invalid_api_hash"),
+    SecretName.FACEBOOK_APP_SECRET: (re.compile(r"^[0-9a-f]{32}$"), "invalid_app_secret"),
 }
 
 
@@ -76,6 +77,15 @@ class SettingsService:
         with self._sessions.begin() as session:
             for key, value in new.model_dump(mode="json").items():
                 session.merge(SettingRow(key=key, value=value))
+        return new
+
+    def set_facebook_page(self, page_id: str | None, page_name: str | None) -> AppSettings:
+        """Remember the page chosen at login (or forget it on logout)."""
+        current = self.get()
+        facebook = current.facebook.model_copy(update={"page_id": page_id, "page_name": page_name})
+        new = current.model_copy(update={"facebook": facebook})
+        with self._sessions.begin() as session:
+            session.merge(SettingRow(key="facebook", value=facebook.model_dump(mode="json")))
         return new
 
     @staticmethod

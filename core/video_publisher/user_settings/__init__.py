@@ -2,6 +2,8 @@
 
 from video_publisher.user_settings.models import (
     AppSettings,
+    FacebookPatch,
+    FacebookSettings,
     Language,
     SettingsPatch,
     TelegramMode,
@@ -12,6 +14,8 @@ from video_publisher.user_settings.service import SettingsService, build_setting
 
 __all__ = [
     "AppSettings",
+    "FacebookPatch",
+    "FacebookSettings",
     "Language",
     "SettingsPatch",
     "SettingsService",
