@@ -81,7 +81,7 @@ powershell -ExecutionPolicy Bypass -File scripts\check.ps1
 
 ## Сайт
 
-Страницы для проверок Google и Meta лежат в `docs/`: [index.html](docs/index.html), [privacy.html](docs/privacy.html) (политика конфиденциальности), [terms.html](docs/terms.html) (условия использования). Их можно опубликовать через GitHub Pages (папка `docs/` ветки `main`).
+Страницы для проверок Google и Meta лежат в `site/`: [index.html](site/index.html), [privacy.html](site/privacy.html) (политика конфиденциальности), [terms.html](site/terms.html) (условия использования). После отправки в `main` их публикует на GitHub Pages workflow `.github/workflows/pages.yml` (Settings → Pages → Source: GitHub Actions). Адрес: https://alexlozov.github.io/video-publisher/. Документация разработчика в `docs/` на сайт не попадает.
 
 ## Лицензия
 
