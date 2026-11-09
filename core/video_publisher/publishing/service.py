@@ -42,6 +42,7 @@ from video_publisher.domain import (
     PublishTarget,
     Video,
 )
+from video_publisher.media.probe import probe
 from video_publisher.platforms.base import PlatformAdapter
 from video_publisher.platforms.errors import PublishError
 from video_publisher.platforms.facebook_page import FacebookPageAdapter
@@ -286,8 +287,15 @@ class PublishingService:
             description=request.description.strip(),
             hashtags=_clean_hashtags(request.hashtags),
         )
+        path = Path(request.video_path.strip())
+        info = probe(path) if path.is_file() else None
         publication = Publication(
-            video=Video(path=Path(request.video_path.strip())),
+            video=Video(
+                path=path,
+                duration_seconds=info.duration_seconds if info else None,
+                width=info.width if info else None,
+                height=info.height if info else None,
+            ),
             target=PublishTarget(
                 platform=request.platform, format=PostFormat.VIDEO, account_id=built.target
             ),
