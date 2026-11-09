@@ -78,3 +78,11 @@ powershell -ExecutionPolicy Bypass -File scripts\check.ps1
 - Python: `pytest` (покрытие ядра — не ниже 70%), `ruff check .`, `mypy`.
 - Интерфейс (в `ui/`): `npm test`, `npm run test:coverage`, `npm run e2e`.
 - Интеграционные тесты с реальными API: `pytest -m integration` (по умолчанию не запускаются).
+
+## Сайт
+
+Страницы для проверок Google и Meta лежат в `docs/`: [index.html](docs/index.html), [privacy.html](docs/privacy.html) (политика конфиденциальности), [terms.html](docs/terms.html) (условия использования). Их можно опубликовать через GitHub Pages (папка `docs/` ветки `main`).
+
+## Лицензия
+
+[MIT](LICENSE). Зависимость hachoir (чтение длительности и размера кадра) распространяется под GPL v2; до сборки .exe её планируется заменить своим маленьким парсером MP4, см. docs/STATUS.md.
