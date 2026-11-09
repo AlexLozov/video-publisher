@@ -284,7 +284,13 @@ class PublishingService:
         if request.scheduled_at is not None:
             if not built.adapter.supports_native_scheduling:
                 raise PublishError("scheduling_not_supported", method=built.method)
-            check_schedule_time(request.scheduled_at, self._now(), built.adapter.max_schedule_ahead)
+            adapter = built.adapter
+            check_schedule_time(
+                request.scheduled_at,
+                self._now(),
+                adapter.max_schedule_ahead,
+                adapter.min_schedule_lead,
+            )
         return built, publication, request
 
     @staticmethod
