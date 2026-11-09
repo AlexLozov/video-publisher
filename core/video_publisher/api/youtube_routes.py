@@ -47,6 +47,12 @@ def login_status(service: Service) -> YouTubeLoginStatus:
     return _call(service.status)
 
 
+@router.post("/verify", response_model=YouTubeLoginStatus)
+def verify(service: Service) -> YouTubeLoginStatus:
+    """The status after checking with Google that the stored login still works."""
+    return _call(service.verify)
+
+
 @router.post("/login", response_model=YouTubeLoginStatus)
 def login(service: Service) -> YouTubeLoginStatus:
     return _call(service.start)

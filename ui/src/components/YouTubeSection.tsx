@@ -5,6 +5,7 @@ import {
   ApiError,
   cancelYouTubeLogin,
   fetchYouTubeLogin,
+  verifyYouTubeLogin,
   logoutYouTube,
   patchSettings,
   startYouTubeLogin,
@@ -110,7 +111,8 @@ export function YouTubeSection({ settings, onSaved, onSecret, pollMs = 1500 }: P
 
   useEffect(() => {
     let cancelled = false;
-    fetchYouTubeLogin()
+    // Opening the section checks the stored login with Google (cached on the backend).
+    verifyYouTubeLogin()
       .then((s) => {
         if (!cancelled) apply(s);
       })

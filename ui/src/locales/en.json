@@ -108,7 +108,7 @@
       "clientId": "Client ID",
       "clientSecret": "Client Secret",
       "clientSecretHint": "Google Cloud → Google Auth Platform → Clients → your “Desktop app” client.",
-      "auditHint": "Until your Google project passes the YouTube audit, every video uploaded through the API stays private (visible only to you), and you need to log in again every 7 days.",
+      "auditHint": "Until your Google project passes the YouTube audit, every video uploaded through the API stays private (visible only to you). While the consent screen is in Testing, Google ends the login every 7 days: switch it to Production (Google Auth Platform → Audience → Publish app). If the login stops working, the app notices when you open Settings or the upload screen and asks you to log in again.",
       "login": {
         "title": "Log in with Google",
         "needKeys": "Save the Client ID and Client Secret first; you cannot log in without them.",

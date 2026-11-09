@@ -108,7 +108,7 @@
       "clientId": "Client ID",
       "clientSecret": "Client Secret",
       "clientSecretHint": "Google Cloud → Google Auth Platform → Clients → ваш клиент «Desktop app».",
-      "auditHint": "Пока проект Google не прошёл проверку YouTube, все загруженные через API видео остаются ограниченными (видны только вам), а вход нужно повторять раз в 7 дней.",
+      "auditHint": "Пока проект Google не прошёл проверку YouTube, все загруженные через API видео остаются ограниченными (видны только вам). Пока экран согласия в режиме Testing, Google сбрасывает вход раз в 7 дней — переведите его в Production (Google Auth Platform → Audience → Publish app). Если вход перестал работать, приложение заметит это при открытии настроек или экрана публикации и попросит войти снова.",
       "login": {
         "title": "Вход через Google",
         "needKeys": "Сначала сохраните Client ID и Client Secret — без них войти нельзя.",

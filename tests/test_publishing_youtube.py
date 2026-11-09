@@ -21,9 +21,18 @@ from video_publisher.platforms import PlatformRegistry
 from video_publisher.platforms.errors import PublishError
 from video_publisher.platforms.youtube import API_BASE, TOKEN_URL, UPLOAD_URL, YouTubeAdapter
 from video_publisher.publishing import PublishingService
-from video_publisher.publishing.service import PublishRequest, default_adapter_factory
+from video_publisher.publishing.service import (
+    BatchPublishRequest,
+    PublishRequest,
+    default_adapter_factory,
+)
 from video_publisher.storage.models import PublicationRow
-from video_publisher.user_settings import SettingsPatch, SettingsService, YouTubePatch
+from video_publisher.user_settings import (
+    SettingsPatch,
+    SettingsService,
+    TelegramPatch,
+    YouTubePatch,
+)
 
 NOW = datetime(2026, 11, 9, 12, 0, tzinfo=UTC)
 CLIENT_ID = "123456789012-abcdefghij0123456789.apps.googleusercontent.com"
@@ -188,13 +197,48 @@ def test_long_title_is_refused_before_upload(
 def test_revoked_login_is_forgotten(
     service: PublishingService, video: str, secrets: MemorySecretStore
 ) -> None:
+    # The login is checked before anything starts: no record, the user logs in again.
     with respx.mock() as api:
         api.post(TOKEN_URL).respond(400, json={"error": "invalid_grant"})
-        view = service.start(PublishRequest(video_path=video, platform=Platform.YOUTUBE))
-    done = service.get(view.id)
-    assert done is not None and done.error_code == "youtube_token_invalid"
+        with pytest.raises(PublishError) as exc:
+            service.start(PublishRequest(video_path=video, platform=Platform.YOUTUBE))
+    assert exc.value.code == "youtube_token_invalid"
+    assert service.recent() == []
     assert secrets.get(SecretName.YOUTUBE_REFRESH_TOKEN) is None
     assert secrets.get(SecretName.YOUTUBE_CLIENT_SECRET) is not None
+
+
+@pytest.mark.usefixtures("logged_in")
+def test_dead_login_stops_the_whole_batch(
+    service: PublishingService, video: str, settings_service: SettingsService
+) -> None:
+    """Telegram + YouTube with a dead YouTube login: nothing goes out anywhere."""
+    settings_service.update(SettingsPatch(telegram=TelegramPatch(channel="@my_channel")))
+    settings_service.set_secret(
+        SecretName.TELEGRAM_BOT_TOKEN, "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ"
+    )
+    with respx.mock(assert_all_called=False) as api:
+        api.post(TOKEN_URL).respond(400, json={"error": "invalid_grant"})
+        tg = api.post(url__startswith="https://api.telegram.org").respond(200, json={"ok": True})
+        with pytest.raises(PublishError) as exc:
+            service.start_batch(
+                BatchPublishRequest(
+                    video_path=video, platforms=[Platform.TELEGRAM, Platform.YOUTUBE]
+                )
+            )
+    assert exc.value.code == "youtube_token_invalid"
+    assert exc.value.params["platform"] == "youtube"
+    assert not tg.called
+    assert service.recent() == []
+
+
+@pytest.mark.usefixtures("logged_in")
+def test_offline_check_blocks_youtube_start(service: PublishingService, video: str) -> None:
+    with respx.mock() as api:
+        api.post(TOKEN_URL).mock(side_effect=httpx.ConnectError("offline"))
+        with pytest.raises(PublishError) as exc:
+            service.start(PublishRequest(video_path=video, platform=Platform.YOUTUBE))
+    assert exc.value.code == "network_error"
 
 
 @pytest.mark.usefixtures("logged_in")

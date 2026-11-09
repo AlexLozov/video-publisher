@@ -28,7 +28,7 @@ function setup(settings: Settings, routes: Record<string, Route>) {
 
 describe("youtube settings", () => {
   it("asks for the Google client keys before login", async () => {
-    setup(makeSettings(), { "GET /api/youtube/account": { body: st() } });
+    setup(makeSettings(), { "POST /api/youtube/account/verify": { body: st() } });
     expect(
       await screen.findByText(
         "Сначала сохраните Client ID и Client Secret — без них войти нельзя.",
@@ -41,6 +41,7 @@ describe("youtube settings", () => {
   it("logs in through the browser and reports the channel", async () => {
     let status = st();
     const { onSaved } = setup(KEYS, {
+      "POST /api/youtube/account/verify": () => ({ body: status }),
       "GET /api/youtube/account": () => ({ body: status }),
       "POST /api/youtube/account/login": () => {
         status = st({ state: "waiting" });
@@ -70,13 +71,13 @@ describe("youtube settings", () => {
   });
 
   it("shows why the last login failed", async () => {
-    setup(KEYS, { "GET /api/youtube/account": { body: st({ error: "youtube_no_channel" }) } });
+    setup(KEYS, { "POST /api/youtube/account/verify": { body: st({ error: "youtube_no_channel" }) } });
     expect(await screen.findByRole("alert")).toHaveTextContent(/нет канала YouTube/);
   });
 
   it("saves the client id and shows a field error", async () => {
     const { fetch } = setup(makeSettings(), {
-      "GET /api/youtube/account": { body: st() },
+      "POST /api/youtube/account/verify": { body: st() },
       "PATCH /api/settings": {
         status: 422,
         body: {
@@ -95,7 +96,7 @@ describe("youtube settings", () => {
 
   it("saves the upload defaults", async () => {
     const { fetch, onSaved } = setup(KEYS, {
-      "GET /api/youtube/account": { body: st() },
+      "POST /api/youtube/account/verify": { body: st() },
       "PATCH /api/settings": ({ body }) => ({
         body: { ...KEYS, youtube: { ...KEYS.youtube, ...(body as { youtube: object }).youtube } },
       }),
@@ -117,6 +118,26 @@ describe("youtube settings", () => {
       },
     });
     expect(screen.getByLabelText("Теги")).toHaveValue("горы, влог");
+  });
+});
+
+describe("youtube settings: dead login", () => {
+  it("shows the login button when Google no longer accepts the stored login", async () => {
+    const { onSaved } = setup(
+      makeSettings({
+        ...KEYS,
+        youtube: { ...KEYS.youtube, channel_id: "UC1", channel_title: "My Channel" },
+        secrets: { youtube_client_secret: true, youtube_refresh_token: true },
+      }),
+      { "POST /api/youtube/account/verify": { body: st({ error: "youtube_token_invalid" }) } },
+    );
+    expect(await screen.findByRole("button", { name: "Войти через Google" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/больше не действует/);
+    expect(onSaved).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        secrets: expect.objectContaining({ youtube_refresh_token: false }),
+      }),
+    );
   });
 });
 

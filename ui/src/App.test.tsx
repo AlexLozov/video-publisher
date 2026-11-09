@@ -190,3 +190,34 @@ describe("language", () => {
     },
   );
 });
+
+describe("youtube login check", () => {
+  it("shows YouTube as not set up when Google no longer accepts the login", async () => {
+    const settings = makeSettings({
+      youtube: {
+        ...makeSettings().youtube,
+        client_id: "1-a.apps.googleusercontent.com",
+        channel_id: "UC1",
+        channel_title: "My Channel",
+      },
+      secrets: { youtube_client_secret: true, youtube_refresh_token: true },
+    });
+    const fetch = mockFetch({
+      "/api/health": HEALTH_OK,
+      "/api/platforms": PLATFORMS,
+      "GET /api/publications?limit=20": { body: [] },
+      "GET /api/settings": { body: settings },
+      "POST /api/youtube/account/verify": {
+        body: { state: "logged_out", channel: null, error: "youtube_token_invalid" },
+      },
+    });
+    render(<App />);
+    // Not on the home screen: nothing to check there.
+    expect(calls(fetch).some((c) => c.url.endsWith("/verify"))).toBe(false);
+
+    const nav = screen.getByRole("navigation", { name: "Разделы" });
+    await userEvent.click(within(nav).getByRole("button", { name: "Публикация" }));
+    expect(await screen.findByText(/YouTube не настроен/)).toBeInTheDocument();
+    expect(screen.getByTestId("network-youtube")).not.toBeChecked();
+  });
+});

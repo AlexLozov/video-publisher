@@ -341,6 +341,8 @@ class PublishingService:
         if not check.ok:
             raise PublishError(check.errors[0], errors=check.errors)
         built.adapter.check_text(publication)
+        if built.adapter.check_login_before_start:
+            built.adapter.authenticate()
         if request.scheduled_at is not None:
             if not built.adapter.supports_native_scheduling:
                 raise PublishError("scheduling_not_supported", method=built.method)

@@ -306,6 +306,115 @@ def test_real_listener_on_free_port() -> None:
     assert got == [{"code": "c", "state": "s"}]
 
 
+# --- verify (is the stored login still alive?) --------------------------------------------
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+@pytest.fixture
+def clock() -> Clock:
+    return Clock()
+
+
+@pytest.fixture
+def logged_in(
+    api: respx.MockRouter,
+    settings_service: SettingsService,
+    opened: list[str],
+    clock: Clock,
+) -> YouTubeLoginService:
+    FakeListener.instances = []
+    service = YouTubeLoginService(
+        settings_service,
+        google=GoogleClient(sleep=lambda _: None, max_retries=1),
+        open_browser=opened.append,
+        listener_factory=FakeListener,  # type: ignore[arg-type]
+        clock=clock,
+    )
+    configure(settings_service)
+    mock_google(api)
+    assert login(service, opened)
+    api.routes.clear()
+    return service
+
+
+def test_verify_checks_with_google_and_caches(
+    api: respx.MockRouter, logged_in: YouTubeLoginService, clock: Clock
+) -> None:
+    token = api.post(TOKEN_URL).respond(200, json={"access_token": "a"})
+    # Just logged in: trusted for a while without asking Google.
+    assert logged_in.verify().state is YouTubeLoginState.LOGGED_IN
+    assert not token.called
+    clock.now += 301
+    assert logged_in.verify().state is YouTubeLoginState.LOGGED_IN
+    assert token.call_count == 1
+    form = parse_qs(token.calls.last.request.content.decode())
+    assert form["grant_type"] == ["refresh_token"] and form["refresh_token"] == ["refresh-tok"]
+    clock.now += 10
+    logged_in.verify()
+    assert token.call_count == 1  # cached
+
+
+def test_verify_logs_out_a_dead_login(
+    api: respx.MockRouter,
+    logged_in: YouTubeLoginService,
+    clock: Clock,
+    secrets: MemorySecretStore,
+    settings_service: SettingsService,
+) -> None:
+    api.post(TOKEN_URL).respond(400, json={"error": "invalid_grant"})
+    clock.now += 301
+    status = logged_in.verify()
+    assert status.state is YouTubeLoginState.LOGGED_OUT
+    assert status.error == "youtube_token_invalid"
+    assert secrets.get(SecretName.YOUTUBE_REFRESH_TOKEN) is None
+    assert secrets.get(SecretName.YOUTUBE_CLIENT_SECRET) == SECRET  # keys stay
+    assert settings_service.get().youtube.channel_id is None
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.ConnectError("offline"),
+        httpx.Response(503),
+        httpx.Response(401, json={"error": "invalid_client"}),
+    ],
+)
+def test_verify_keeps_login_when_google_cannot_answer(
+    api: respx.MockRouter,
+    logged_in: YouTubeLoginService,
+    clock: Clock,
+    secrets: MemorySecretStore,
+    response: object,
+) -> None:
+    token = api.post(TOKEN_URL)
+    if isinstance(response, Exception):
+        token.mock(side_effect=response)
+    else:
+        token.mock(return_value=response)
+    clock.now += 301
+    assert logged_in.verify().state is YouTubeLoginState.LOGGED_IN
+    assert secrets.get(SecretName.YOUTUBE_REFRESH_TOKEN) == "refresh-tok"
+    # Not cached: the next look asks again.
+    calls = token.call_count
+    logged_in.verify()
+    assert token.call_count > calls
+
+
+def test_verify_when_logged_out_asks_nobody(
+    api: respx.MockRouter, service: YouTubeLoginService
+) -> None:
+    token = api.post(TOKEN_URL).respond(200, json={"access_token": "a"})
+    assert service.verify().state is YouTubeLoginState.LOGGED_OUT
+    assert not token.called
+
+
 # --- API ----------------------------------------------------------------------------------
 
 
@@ -340,6 +449,7 @@ def test_api_flow(
         "channel": {"id": "UC123", "title": "My Channel"},
         "error": None,
     }
+    assert client.post("/api/youtube/account/verify").json()["state"] == "logged_in"
     assert client.post("/api/youtube/account/login").status_code == 409
     assert client.post("/api/youtube/account/logout").json()["state"] == "logged_out"
     assert client.post("/api/youtube/account/cancel").json()["state"] == "logged_out"

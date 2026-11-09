@@ -250,6 +250,8 @@ class YouTubeAdapter(PlatformAdapter):
     # A short lead keeps "publishAt" in the future after a long upload.
     min_schedule_lead: ClassVar[timedelta] = timedelta(minutes=15)
     max_schedule_ahead: ClassVar[timedelta] = timedelta(days=365)
+    # Refresh tokens die (7 days in "Testing", revoked access...): check before uploading.
+    check_login_before_start: ClassVar[bool] = True
 
     def __init__(
         self,
