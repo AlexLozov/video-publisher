@@ -2,7 +2,13 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError, startBatch, type Settings } from "../api";
-import { ALL_PLATFORMS, isConfigured, SUPPORTED_PLATFORMS, type PlatformId } from "../platforms";
+import {
+  ALL_PLATFORMS,
+  canScheduleOn,
+  isConfigured,
+  SUPPORTED_PLATFORMS,
+  type PlatformId,
+} from "../platforms";
 import { buildCaption, fileName, parseHashtags, TELEGRAM_CAPTION_LIMIT } from "../caption";
 import { useDesktopApi, useFileDrop } from "../desktop";
 import { errorKey } from "../errors";
@@ -46,7 +52,6 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
 
   const tags = parseHashtags(hashtags);
   const captionLength = buildCaption(title, description, tags).length;
-  const captionTooLong = captionLength > TELEGRAM_CAPTION_LIMIT;
 
   const tg = settings?.telegram;
   const accountMode = tg?.mode === "account";
@@ -60,8 +65,12 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
   const toggle = (p: PlatformId) =>
     setSelected((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
   const telegramOn = selected.includes("telegram");
-  // Only "my account" lets Telegram keep a scheduled post (the app may be off then).
-  const canSchedule = accountMode && telegramOn;
+  const facebookOn = selected.includes("facebook");
+  // The Telegram caption limit matters only when Telegram is ticked.
+  const captionTooLong = telegramOn && captionLength > TELEGRAM_CAPTION_LIMIT;
+  // Scheduling needs every ticked network to keep the post itself (the app may be off
+  // then): Telegram "my account" and Facebook can, the Telegram bot cannot.
+  const canSchedule = selected.length > 0 && selected.every((p) => canScheduleOn(settings, p));
   const scheduling = canSchedule && later;
 
   async function pick() {
@@ -152,9 +161,14 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
               <p className="text-xs text-slate-400">{t("publish.pathHint")}</p>
             </>
           )}
-          <p className="text-xs text-slate-400">
-            {accountMode ? t("publish.formatHintAccount") : t("publish.formatHintBot")}
-          </p>
+          {(telegramOn || !facebookOn) && (
+            <p className="text-xs text-slate-400">
+              {accountMode ? t("publish.formatHintAccount") : t("publish.formatHintBot")}
+            </p>
+          )}
+          {facebookOn && (
+            <p className="text-xs text-slate-400">{t("publish.formatHintFacebook")}</p>
+          )}
         </div>
 
         {/* Text */}
@@ -231,6 +245,10 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
                         : t("settings.telegram.modeBot")}{" "}
                       · {tg.channel}
                     </span>
+                  ) : p === "facebook" && ready && settings ? (
+                    <span data-testid="destination-facebook">
+                      {t("platform.facebook")} · {settings.facebook.page_name}
+                    </span>
                   ) : (
                     <span>{t(`platform.${p}`)}</span>
                   )}
@@ -245,7 +263,8 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
                     {p === "telegram" &&
                       (accountMode
                         ? t("publish.notConfiguredAccount")
-                        : t("publish.notConfiguredBot"))}{" "}
+                        : t("publish.notConfiguredBot"))}
+                    {p === "facebook" && t("publish.notConfiguredFacebook")}{" "}
                     <button
                       type="button"
                       onClick={onOpenSettings}
@@ -260,7 +279,7 @@ export function PublishPage({ settings, onOpenSettings, pollMs }: Props) {
           })}
         </fieldset>
 
-        {/* When (only "my account": Telegram keeps the scheduled post) */}
+        {/* When (only if every ticked network keeps the scheduled post itself) */}
         {canSchedule && (
           <fieldset className="mt-5 space-y-2">
             <legend className="mb-1 text-sm font-medium">{t("publish.when")}</legend>

@@ -16,10 +16,11 @@ from video_publisher.user_settings.service import InvalidSecretError
 
 
 class WritableSecret(StrEnum):
-    """Secrets the user may set by hand (the Telegram session comes from the login flow)."""
+    """Secrets the user may set by hand (sessions and page tokens come from login flows)."""
 
     TELEGRAM_BOT_TOKEN = SecretName.TELEGRAM_BOT_TOKEN.value
     TELEGRAM_API_HASH = SecretName.TELEGRAM_API_HASH.value
+    FACEBOOK_APP_SECRET = SecretName.FACEBOOK_APP_SECRET.value
 
 
 class SettingsResponse(AppSettings):

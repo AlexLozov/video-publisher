@@ -18,6 +18,9 @@ class SecretName(StrEnum):
     TELEGRAM_API_HASH = "telegram_api_hash"
     # Written by the Telegram login flow, never directly by the user.
     TELEGRAM_SESSION = "telegram_session"
+    FACEBOOK_APP_SECRET = "facebook_app_secret"
+    # Written by the Facebook login flow: a page token that does not expire.
+    FACEBOOK_PAGE_TOKEN = "facebook_page_token"
 
 
 class SecretStoreError(Exception):

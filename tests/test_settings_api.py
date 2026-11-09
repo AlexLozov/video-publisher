@@ -6,7 +6,13 @@ from video_publisher.auth.secret_store import MemorySecretStore, SecretName, Sec
 VALID_TOKEN = "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ"
 VALID_HASH = "0123456789abcdef0123456789abcdef"
 
-NO_SECRETS = {"telegram_bot_token": False, "telegram_api_hash": False, "telegram_session": False}
+NO_SECRETS = {
+    "telegram_bot_token": False,
+    "telegram_api_hash": False,
+    "telegram_session": False,
+    "facebook_app_secret": False,
+    "facebook_page_token": False,
+}
 
 
 def test_get_defaults(client: TestClient) -> None:
@@ -15,6 +21,7 @@ def test_get_defaults(client: TestClient) -> None:
     assert resp.json() == {
         "language": "ru",
         "telegram": {"mode": "bot", "channel": None, "api_id": None},
+        "facebook": {"app_id": None, "page_id": None, "page_name": None},
         "secrets": NO_SECRETS,
     }
 

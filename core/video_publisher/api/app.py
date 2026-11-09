@@ -10,9 +10,11 @@ from pydantic import BaseModel
 
 from video_publisher import __version__
 from video_publisher.api.errors import install_error_handlers
+from video_publisher.api.facebook_routes import router as facebook_router
 from video_publisher.api.publication_routes import router as publication_router
 from video_publisher.api.settings_routes import router as settings_router
 from video_publisher.api.telegram_account_routes import router as telegram_account_router
+from video_publisher.auth.facebook_login import FacebookLoginService
 from video_publisher.auth.telegram_login import TelegramLoginService
 from video_publisher.config import get_settings
 from video_publisher.domain import Platform
@@ -41,6 +43,7 @@ def create_app(
     settings_service: SettingsService | None = None,
     publishing_service: PublishingService | None = None,
     telegram_client_factory: ClientFactory = default_client_factory,
+    facebook_login_service: FacebookLoginService | None = None,
 ) -> FastAPI:
     """Build the API app. If ``ui_dist_dir`` exists, the built UI is served at ``/``.
 
@@ -63,6 +66,12 @@ def create_app(
         publishing_service.recover_interrupted()
         closers.insert(0, publishing_service.shutdown)
 
+    if facebook_login_service is None:
+        facebook_login_service = FacebookLoginService(
+            settings_service, redirect_port=get_settings().facebook_redirect_port
+        )
+    closers.insert(0, facebook_login_service.shutdown)
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
@@ -79,6 +88,8 @@ def create_app(
     app.include_router(settings_router)
     app.include_router(publication_router)
     app.include_router(telegram_account_router)
+    app.state.facebook_login_service = facebook_login_service
+    app.include_router(facebook_router)
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:

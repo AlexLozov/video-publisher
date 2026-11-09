@@ -84,6 +84,24 @@
         "logout": "Sign out",
         "stored": "The session is stored in Windows Credential Manager. The number, code and password are not saved."
       }
+    },
+    "facebook": {
+      "intro": "You need your own Meta app (developers.facebook.com) and a Page you manage. While the app is in development mode, login works for you without Meta's review.",
+      "appId": "App ID",
+      "appSecret": "App Secret",
+      "appSecretHint": "In the Meta app: App settings → Basic.",
+      "redirectHint": "If Facebook says the address is not allowed, add it in the Meta app (Facebook Login → Settings → Valid OAuth Redirect URIs):",
+      "login": {
+        "title": "Log in with Facebook",
+        "needKeys": "Save the App ID and App Secret first; login needs them.",
+        "start": "Log in with Facebook",
+        "waiting": "A browser window opened. Log in to Facebook and allow access to the Page; the app will wait.",
+        "cancel": "Cancel",
+        "choosePage": "You manage several Pages. Choose where to publish:",
+        "loggedIn": "Logged in. Page: {{page}}",
+        "logout": "Log out",
+        "stored": "The Page token is kept in Windows Credential Manager. The app never sees your Facebook password."
+      }
     }
   },
   "secret": {
@@ -100,7 +118,8 @@
     "literal_error": "Value is not allowed",
     "enum": "Value is not allowed",
     "string_too_short": "Field cannot be empty",
-    "default": "Invalid value"
+    "default": "Invalid value",
+    "invalid_app_id": "The App ID is a number of 5–20 digits"
   },
   "errors": {
     "not_found": "Not found",
@@ -124,7 +143,7 @@
     "telegram_unavailable": "Telegram is unavailable right now. Please try later.",
     "telegram_timeout_uncertain": "The connection dropped during upload. Check the channel: the post may have gone out. It was not retried automatically to avoid a duplicate.",
     "telegram_bot_no_native_scheduling": "Bots cannot schedule posts natively in Telegram.",
-    "network_error": "No internet connection or Telegram is unreachable.",
+    "network_error": "No internet connection or the network is unavailable.",
     "telegram_not_configured": "Telegram is not set up: enter the channel and bot token in settings.",
     "platform_not_supported": "This platform is not supported yet.",
     "interrupted": "The app was closed during upload. Check the channel: the post may have gone out.",
@@ -155,6 +174,25 @@
     "publication_in_progress": "The video is still uploading. You can delete the record once it finishes.",
     "cancel_needs_method": "The post was scheduled with the \"{{method}}\" method. Switch Telegram to it in Settings to cancel the post.",
     "cancel_not_supported": "This network cannot cancel a scheduled post.",
+    "invalid_app_secret": "The App Secret is 32 characters of digits and letters a–f",
+    "facebook_not_configured": "Facebook is not set up: log in with Facebook in Settings.",
+    "facebook_app_not_configured": "Save the App ID and App Secret of your Meta app first.",
+    "facebook_already_logged_in": "Already logged in. Log out first to switch Pages.",
+    "facebook_port_busy": "Port {{port}} for the Facebook login is used by another program. Close it and try again.",
+    "facebook_login_denied": "The Facebook login was cancelled or access was not allowed.",
+    "facebook_no_pages": "Facebook found no Pages you manage, or access to them was not granted. Log in again and tick the Page.",
+    "facebook_page_not_offered": "This Page is not in the list. Log in with Facebook again.",
+    "facebook_token_invalid": "Access to the Facebook Page no longer works (for example, the password changed or access was removed). Log in again in Settings.",
+    "facebook_rate_limited": "Facebook is limiting requests for now. Try again later.",
+    "facebook_unavailable": "Facebook is unavailable right now. Try again later.",
+    "facebook_permission_denied": "No permission to publish on this Page. Log in again and allow publishing.",
+    "facebook_video_rejected": "Facebook did not accept the video. Check the file: MP4, not damaged.",
+    "facebook_page_not_found": "The Page or video was not found on Facebook.",
+    "facebook_rejected": "Facebook rejected the post.",
+    "facebook_timeout_uncertain": "The connection dropped during the upload. Check the Page: the video may be out. It was not retried automatically to avoid a duplicate.",
+    "facebook_unsupported_format": "An MP4 file is needed. Convert the video to MP4 and try again.",
+    "facebook_file_too_large": "The file is over 1 GB ({{size_mb}} MB). Facebook accepts up to {{max_mb}} MB in a single upload.",
+    "facebook_title_too_long": "The title is longer than {{max}} characters ({{length}}). Shorten it.",
     "unknown": "Unknown error"
   },
   "publish": {
@@ -181,8 +219,10 @@
     "now": "Now",
     "later": "Scheduled",
     "scheduleAt": "Publish date and time",
-    "scheduleHint": "Telegram itself keeps the post and publishes it at this time, even if the computer is off. Up to 365 days ahead.",
-    "schedule": "Schedule"
+    "scheduleHint": "The network itself keeps the post and publishes it at this time, even if the computer is off. Telegram: up to 365 days ahead, Facebook: 10 minutes to 30 days.",
+    "schedule": "Schedule",
+    "formatHintFacebook": "For Facebook: MP4 up to 1 GB.",
+    "notConfiguredFacebook": "Facebook is not set up: log in with Facebook."
   },
   "publications": {
     "title": "Publications",

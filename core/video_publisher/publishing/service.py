@@ -9,7 +9,8 @@ Flow:
 3. The row ends as ``published`` (with link), ``scheduled`` (the platform holds the post
    until ``scheduled_at``) or ``failed`` (with error code and params).
 
-Scheduling is only accepted for adapters that schedule natively (Telegram "my account").
+Scheduling is only accepted for adapters that schedule natively (Telegram "my account",
+Facebook Page).
 Publishing at a later time from the app itself comes with the scheduler.
 
 If the app is closed during an upload, the row stays ``publishing``; on the next start
@@ -43,6 +44,7 @@ from video_publisher.domain import (
 )
 from video_publisher.platforms.base import PlatformAdapter
 from video_publisher.platforms.errors import PublishError
+from video_publisher.platforms.facebook_page import FacebookPageAdapter
 from video_publisher.platforms.scheduling import check_schedule_time
 from video_publisher.platforms.telegram_account import TelegramAccountAdapter
 from video_publisher.platforms.telegram_bot import TelegramBotAdapter
@@ -148,6 +150,8 @@ def make_adapter_factory(
     """Build adapters from the user's settings (the Telegram client is replaceable in tests)."""
 
     def factory(platform: Platform, settings: SettingsService) -> BuiltAdapter:
+        if platform is Platform.FACEBOOK:
+            return _facebook_page(settings)
         if platform is not Platform.TELEGRAM:
             raise PublishError("platform_not_supported", platform=platform.value)
         if settings.get().telegram.mode is TelegramMode.ACCOUNT:
@@ -185,6 +189,20 @@ def _telegram_account(settings: SettingsService, client_factory: ClientFactory) 
         on_session_invalid=lambda: settings.delete_secret(SecretName.TELEGRAM_SESSION),
     )
     return BuiltAdapter(adapter, TelegramMode.ACCOUNT.value, tg.channel)
+
+
+def _facebook_page(settings: SettingsService) -> BuiltAdapter:
+    fb = settings.get().facebook
+    token = settings.get_secret(SecretName.FACEBOOK_PAGE_TOKEN)
+    if not fb.page_id or not token:
+        raise PublishError("facebook_not_configured", missing=["login"])
+    adapter = FacebookPageAdapter(
+        fb.page_id,
+        token,
+        # A revoked or expired page token cannot be repaired: Settings ask to log in again.
+        on_token_invalid=lambda: settings.delete_secret(SecretName.FACEBOOK_PAGE_TOKEN),
+    )
+    return BuiltAdapter(adapter, "page", fb.page_name or fb.page_id)
 
 
 def _telegram_bot(settings: SettingsService) -> BuiltAdapter:
@@ -284,7 +302,13 @@ class PublishingService:
         if request.scheduled_at is not None:
             if not built.adapter.supports_native_scheduling:
                 raise PublishError("scheduling_not_supported", method=built.method)
-            check_schedule_time(request.scheduled_at, self._now(), built.adapter.max_schedule_ahead)
+            adapter = built.adapter
+            check_schedule_time(
+                request.scheduled_at,
+                self._now(),
+                adapter.max_schedule_ahead,
+                adapter.min_schedule_lead,
+            )
         return built, publication, request
 
     @staticmethod

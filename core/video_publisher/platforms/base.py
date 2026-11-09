@@ -31,6 +31,8 @@ class PlatformAdapter(ABC):
     supported_formats: ClassVar[tuple[PostFormat, ...]] = ()
     # How far ahead ``schedule`` accepts a time (only used with native scheduling).
     max_schedule_ahead: ClassVar[timedelta] = timedelta(0)
+    # How soon ``schedule`` accepts a time; platforms may require more than the default.
+    min_schedule_lead: ClassVar[timedelta] = timedelta(minutes=1)
 
     @property
     @abstractmethod

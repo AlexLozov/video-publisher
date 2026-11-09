@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     secret_backend: Literal["keyring", "memory"] = "keyring"
     # Overridden only by E2E tests, which point it at a local fake Telegram server.
     telegram_api_base: str = "https://api.telegram.org"
+    # Facebook login returns to http://localhost:<port>/facebook/callback. Facebook needs a
+    # fixed address, so this port is separate from the app's own (random) one.
+    facebook_redirect_port: int = 47615
 
     @property
     def database_url(self) -> str:

@@ -284,7 +284,9 @@ def test_factory_reports_missing_settings(
     assert info.value.params == {"missing": missing}
 
 
-@pytest.mark.parametrize("platform", [p for p in Platform if p is not Platform.TELEGRAM])
+@pytest.mark.parametrize(
+    "platform", [p for p in Platform if p not in (Platform.TELEGRAM, Platform.FACEBOOK)]
+)
 def test_factory_other_platforms_not_supported(
     settings_service: SettingsService, platform: Platform
 ) -> None:
@@ -427,13 +429,13 @@ def test_app_marks_interrupted_uploads_on_start(
     assert resp.json()["error_code"] == "interrupted"
 
 
-def test_platforms_endpoint_marks_telegram_available() -> None:
+def test_platforms_endpoint_marks_working_platforms() -> None:
     with TestClient(create_app()) as client:
         data = client.get("/api/platforms").json()
     assert {p["id"]: p["available"] for p in data} == {
         "youtube": False,
         "tiktok": False,
         "instagram": False,
-        "facebook": False,
+        "facebook": True,
         "telegram": True,
     }
