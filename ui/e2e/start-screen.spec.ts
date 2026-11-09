@@ -17,7 +17,7 @@ test("start screen: backend status and platforms", async ({ page }) => {
   for (const name of ["YouTube / Shorts", "TikTok", "Instagram", "Страница Facebook", "Telegram"]) {
     await expect(page.getByText(name, { exact: true })).toBeVisible();
   }
-  // Telegram can publish; the other platforms are still in development.
-  await expect(page.getByText("в разработке", { exact: true })).toHaveCount(4);
-  await expect(page.getByText("подключено", { exact: true })).toHaveCount(1);
+  // Telegram and Facebook can publish; the other platforms are still in development.
+  await expect(page.getByText("в разработке", { exact: true })).toHaveCount(3);
+  await expect(page.getByText("подключено", { exact: true })).toHaveCount(2);
 });
