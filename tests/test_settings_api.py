@@ -203,7 +203,11 @@ def test_patch_youtube_defaults(client: TestClient) -> None:
         ({"client_id": "not-a-client"}, "body.youtube.client_id", "invalid_client_id"),
         ({"category_id": "99"}, "body.youtube.category_id", "invalid_category"),
         ({"tags": ["a<b"]}, "body.youtube.tags", "invalid_tag"),
-        ({"tags": [f"{i}" + "x" * 60 for i in range(9)]}, "body.youtube.tags", "youtube_tags_too_long"),
+        (
+            {"tags": [f"{i}" + "x" * 60 for i in range(9)]},
+            "body.youtube.tags",
+            "youtube_tags_too_long",
+        ),
         ({"privacy": "secret"}, "body.youtube.privacy", "enum"),
     ],
 )
