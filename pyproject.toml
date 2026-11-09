@@ -7,6 +7,7 @@ name = "video-publisher"
 version = "0.1.0"
 description = "Desktop app that publishes a video to several social networks."
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",

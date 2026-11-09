@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Publisher</title>
-    <meta name="description" content="An open-source desktop application for scheduling and publishing videos to social media platforms.">
+    <meta name="description" content="An open-source desktop application for Windows that publishes and schedules your videos on YouTube, Facebook and Telegram.">
     <style>
         * { box-sizing: border-box; }
 
@@ -29,9 +28,20 @@
             margin-bottom: 12px;
         }
 
-        p {
+        h2 {
+            margin-top: 50px;
+            font-size: 22px;
+        }
+
+        p, li {
             color: #b8c0d0;
             font-size: 18px;
+        }
+
+        .about {
+            text-align: left;
+            margin: 0 auto;
+            max-width: 680px;
         }
 
         .links {
@@ -61,27 +71,54 @@
         <h1>Video Publisher</h1>
 
         <p>
-            An open-source desktop application for scheduling
-            and publishing videos to social media platforms,
-            including YouTube and Facebook.
+            An open-source desktop application for Windows that publishes one video
+            to several social media platforms at once: YouTube (including Shorts),
+            Facebook Pages and Telegram channels.
         </p>
 
         <p>
-            Manage your video publishing workflow from one place.
+            Publish now or schedule for later, and keep the history of your
+            publications in one place.
         </p>
 
+        <div class="about">
+            <h2>How Video Publisher uses your accounts</h2>
+            <ul>
+                <li>
+                    <strong>YouTube:</strong> after you log in with Google, the application
+                    uploads the videos you choose to your own channel, can schedule them,
+                    and can delete a video it scheduled if you cancel the publication.
+                    It reads your channel name only to show which channel you are
+                    connected to.
+                </li>
+                <li>
+                    <strong>Facebook:</strong> publishes videos to a Page you manage.
+                </li>
+                <li>
+                    <strong>Telegram:</strong> posts videos to your channel through your
+                    bot or your account.
+                </li>
+            </ul>
+            <p>
+                The application runs on your computer. Your videos, texts and login keys
+                stay on your computer and are sent only to the platforms you publish to.
+                The developer does not receive or store your data. You can disconnect any
+                account in the application's settings at any time.
+            </p>
+        </div>
+
         <div class="links">
-            <a href="https://github.com/AlexLozov/video-publisher">
-                GitHub Repository
-            </a>
+            <a href="https://github.com/AlexLozov/video-publisher">GitHub Repository</a>
 
             <a href="privacy.html">Privacy Policy</a>
 
             <a href="terms.html">Terms of Service</a>
+
+            <a href="mailto:sasalozov2004@gmail.com">Contact</a>
         </div>
 
         <footer>
-            © 2026 Video Publisher. All rights reserved.
+            © 2026 Video Publisher.
         </footer>
     </main>
 </body>
