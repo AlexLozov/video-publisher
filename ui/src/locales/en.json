@@ -102,6 +102,40 @@
         "logout": "Log out",
         "stored": "The Page token is kept in Windows Credential Manager. The app never sees your Facebook password."
       }
+    },
+    "youtube": {
+      "intro": "You need your own Google Cloud project with YouTube Data API v3 enabled and an OAuth client of type “Desktop app”. While the project is in testing, only accounts listed under Test users can log in.",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "clientSecretHint": "Google Cloud → Google Auth Platform → Clients → your “Desktop app” client.",
+      "auditHint": "Until your Google project passes the YouTube audit, every video uploaded through the API stays private (visible only to you), and you need to log in again every 7 days.",
+      "login": {
+        "title": "Log in with Google",
+        "needKeys": "Save the Client ID and Client Secret first; you cannot log in without them.",
+        "start": "Log in with Google",
+        "waiting": "A browser window opened. Choose the account with your channel and allow access to YouTube; the app is waiting.",
+        "cancel": "Cancel",
+        "loggedIn": "Logged in. Channel: {{channel}}",
+        "logout": "Log out",
+        "stored": "The login key is kept in Windows Credential Manager. The app never sees your Google password."
+      },
+      "defaults": {
+        "title": "Video defaults",
+        "privacy": "Visibility",
+        "privacyHint": "For a scheduled video YouTube uploads it as private and makes it public at the chosen time.",
+        "kids": "Made for kids?",
+        "kidsNo": "No",
+        "kidsYes": "Yes",
+        "category": "Category",
+        "tags": "Tags",
+        "tagsPlaceholder": "travel, mountains, vlog",
+        "tagsHint": "Separated by commas, 500 characters in total. Hashtags from the upload screen go into the description."
+      },
+      "privacy": {
+        "public": "Public",
+        "unlisted": "Unlisted",
+        "private": "Private"
+      }
     }
   },
   "secret": {
@@ -119,7 +153,11 @@
     "enum": "Value is not allowed",
     "string_too_short": "Field cannot be empty",
     "default": "Invalid value",
-    "invalid_app_id": "The App ID is a number of 5–20 digits"
+    "invalid_app_id": "The App ID is a number of 5–20 digits",
+    "invalid_client_id": "A Client ID looks like 123456789012-….apps.googleusercontent.com",
+    "invalid_category": "Choose a category from the list",
+    "invalid_tag": "Tags cannot contain < > or a comma inside a tag",
+    "youtube_tags_too_long": "All tags together are longer than 500 characters. Remove some."
   },
   "errors": {
     "not_found": "Not found",
@@ -193,7 +231,32 @@
     "facebook_unsupported_format": "An MP4 file is needed. Convert the video to MP4 and try again.",
     "facebook_file_too_large": "The file is over 1 GB ({{size_mb}} MB). Facebook accepts up to {{max_mb}} MB in a single upload.",
     "facebook_title_too_long": "The title is longer than {{max}} characters ({{length}}). Shorten it.",
-    "unknown": "Unknown error"
+    "unknown": "Unknown error",
+    "invalid_client_secret": "This does not look like a Client Secret. Copy it from Google Cloud (it usually starts with GOCSPX-).",
+    "youtube_already_logged_in": "You are already logged in to YouTube. Log out first to switch channels.",
+    "youtube_app_not_configured": "Save the Client ID and Client Secret in the YouTube settings first.",
+    "youtube_not_configured": "YouTube is not set up: log in with Google in Settings.",
+    "youtube_client_invalid": "Google did not accept the Client ID or Client Secret. Check them in the YouTube settings.",
+    "youtube_login_denied": "The login was cancelled in the browser. Try again and allow access to YouTube.",
+    "youtube_scope_missing": "The YouTube access box was not ticked during login. Log in again and tick it.",
+    "youtube_no_refresh_token": "Google did not issue a key for staying logged in. Log out and log in again.",
+    "youtube_no_channel": "This Google account has no YouTube channel. Create one on youtube.com or log in with another account.",
+    "youtube_port_busy": "Could not open a port for the Google login. Close other programs and try again.",
+    "youtube_token_invalid": "The YouTube login no longer works (revoked or expired). Log in again in Settings.",
+    "youtube_unavailable": "YouTube is temporarily unavailable. Try again later.",
+    "youtube_rate_limited": "YouTube asks to wait: too many requests. Try again later.",
+    "youtube_quota_exceeded": "Your Google project's daily YouTube API quota is used up (about 6 uploads a day). Try again tomorrow.",
+    "youtube_upload_limit": "YouTube has temporarily limited uploads on this channel. Try again later.",
+    "youtube_api_disabled": "YouTube Data API v3 is not enabled in your Google project. Enable it in Google Cloud.",
+    "youtube_permission_denied": "YouTube denied access. Check the channel and the permissions you granted.",
+    "youtube_video_not_found": "The video was not found on YouTube.",
+    "youtube_rejected": "YouTube rejected the request.",
+    "youtube_unsupported_format": "YouTube needs an MP4 file.",
+    "youtube_file_too_large": "The file is larger than 256 GB; YouTube does not accept it.",
+    "youtube_title_too_long": "The YouTube title is longer than {{max}} characters ({{length}}). Shorten it.",
+    "youtube_description_too_long": "The YouTube description is longer than {{max}} bytes ({{length}}). Shorten the text or hashtags.",
+    "youtube_angle_brackets": "YouTube does not accept < and > in the title or description.",
+    "youtube_timeout_uncertain": "The connection dropped while uploading to YouTube. The video may have been uploaded: check your channel in YouTube Studio before publishing again."
   },
   "publish": {
     "title": "New publication",
@@ -219,10 +282,14 @@
     "now": "Now",
     "later": "Scheduled",
     "scheduleAt": "Publish date and time",
-    "scheduleHint": "The network itself keeps the post and publishes it at this time, even if the computer is off. Telegram: up to 365 days ahead, Facebook: 10 minutes to 30 days.",
+    "scheduleHint": "The network itself keeps the post and publishes it at this time, even if the computer is off. Telegram: up to 365 days ahead, Facebook: 10 minutes to 30 days, YouTube: 15 minutes to 365 days.",
     "schedule": "Schedule",
     "formatHintFacebook": "For Facebook: MP4 up to 1 GB.",
-    "notConfiguredFacebook": "Facebook is not set up: log in with Facebook."
+    "notConfiguredFacebook": "Facebook is not set up: log in with Facebook.",
+    "formatHintYouTube": "For YouTube: MP4. YouTube shows vertical or square videos up to 3 minutes as Shorts.",
+    "youtubeShort": "YouTube: goes out as a Short (vertical, {{seconds}} s).",
+    "youtubeVideo": "YouTube: goes out as a regular video.",
+    "notConfiguredYouTube": "YouTube is not set up: log in with Google."
   },
   "publications": {
     "title": "Publications",
@@ -261,5 +328,22 @@
       "url": "Link",
       "error": "Error"
     }
+  },
+  "youtubeCategory": {
+    "1": "Film & Animation",
+    "2": "Autos & Vehicles",
+    "10": "Music",
+    "15": "Pets & Animals",
+    "17": "Sports",
+    "19": "Travel & Events",
+    "20": "Gaming",
+    "22": "People & Blogs",
+    "23": "Comedy",
+    "24": "Entertainment",
+    "25": "News & Politics",
+    "26": "Howto & Style",
+    "27": "Education",
+    "28": "Science & Technology",
+    "29": "Nonprofits & Activism"
   }
 }

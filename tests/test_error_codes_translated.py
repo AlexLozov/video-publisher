@@ -35,9 +35,22 @@ EXTRA_ERROR_CODES = {
     "facebook_video_rejected",
     "facebook_page_not_found",
     "facebook_rejected",
+    "youtube_unsupported_format",
+    "youtube_file_too_large",
+    "youtube_port_busy",
+    "youtube_quota_exceeded",
+    "youtube_upload_limit",
+    "youtube_rate_limited",
+    "youtube_api_disabled",
+    "youtube_permission_denied",
+    "youtube_video_not_found",
     "unknown",
     "network",
 }
+
+
+# Error names of the OAuth protocol that the code compares against, not codes it sends.
+OAUTH_PROTOCOL_WORDS = {"invalid_grant", "invalid_client"}
 
 
 def _source() -> str:
@@ -49,7 +62,8 @@ def backend_error_codes() -> set[str]:
     found = set(re.findall(r'(?:PublishError|ApiError|InvalidSecretError)\(\s*"([a-z0-9_]+)"', src))
     found |= set(re.findall(r'"(invalid_[a-z_]+)"', src))
     codes = found | set(HTTP_STATUS_CODES.values()) | EXTRA_ERROR_CODES
-    return codes - field_error_codes()  # field codes live under fieldErrors
+    # field codes live under fieldErrors
+    return codes - field_error_codes() - OAUTH_PROTOCOL_WORDS
 
 
 def field_error_codes() -> set[str]:

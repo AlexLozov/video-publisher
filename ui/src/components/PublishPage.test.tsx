@@ -136,8 +136,9 @@ describe("publish page: choosing networks", () => {
       expect(screen.getByTestId(`network-${p}`)).toBeDisabled();
       expect(screen.getByTestId(`network-${p}`)).not.toBeChecked();
     }
-    expect(screen.getAllByText("Скоро")).toHaveLength(3);
+    expect(screen.getAllByText("Скоро")).toHaveLength(2);
     expect(screen.getByText(/Facebook не настроен/)).toBeInTheDocument();
+    expect(screen.getByText(/YouTube не настроен/)).toBeInTheDocument();
   });
 
   it("leaves a network that is not set up unticked", () => {
@@ -496,5 +497,63 @@ describe("publish page: facebook", () => {
     await userEvent.click(screen.getByLabelText("Текст"));
     await userEvent.paste(long);
     expect(screen.getByRole("button", { name: "Опубликовать сейчас" })).toBeEnabled();
+  });
+});
+
+const YOUTUBE = makeSettings({
+  ...CONFIGURED,
+  youtube: {
+    ...makeSettings().youtube,
+    client_id: "1-a.apps.googleusercontent.com",
+    channel_id: "UC1",
+    channel_title: "My Channel",
+  },
+  secrets: { ...CONFIGURED.secrets, youtube_client_secret: true, youtube_refresh_token: true },
+});
+
+const infoUrl = (path: string) =>
+  `GET /api/publications/video-info?path=${encodeURIComponent(path)}`;
+
+describe("publish page: youtube", () => {
+  it("ticks a logged-in channel and tells whether the video goes out as a Short", async () => {
+    setup(
+      {
+        [infoUrl("C:\v.mp4")]: {
+          body: { duration_seconds: 42.4, width: 1080, height: 1920, youtube_short: true },
+        },
+      },
+      YOUTUBE,
+    );
+    expect(screen.getByTestId("network-youtube")).toBeChecked();
+    expect(screen.getByTestId("destination-youtube")).toHaveTextContent("YouTube / Shorts · My Channel");
+    await userEvent.type(screen.getByLabelText("Путь к видеофайлу"), "C:\v.mp4");
+    expect(await screen.findByTestId("youtube-kind")).toHaveTextContent(
+      "YouTube: уйдёт как Shorts (вертикальное, 42 с).",
+    );
+  });
+
+  it("says regular video for a landscape file and nothing when unknown", async () => {
+    setup(
+      {
+        [infoUrl("C:\wide.mp4")]: {
+          body: { duration_seconds: 600, width: 1920, height: 1080, youtube_short: false },
+        },
+      },
+      YOUTUBE,
+    );
+    const input = screen.getByLabelText("Путь к видеофайлу");
+    await userEvent.type(input, "C:\wide.mp4");
+    expect(await screen.findByTestId("youtube-kind")).toHaveTextContent(
+      "YouTube: уйдёт как обычное видео.",
+    );
+    await userEvent.type(input, "x"); // no such file: the hint disappears
+    await waitFor(() => expect(screen.queryByTestId("youtube-kind")).not.toBeInTheDocument());
+  });
+
+  it("can schedule when only YouTube is ticked", async () => {
+    setup({}, YOUTUBE);
+    expect(screen.queryByText("По расписанию")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("network-telegram"));
+    expect(screen.getByText("По расписанию")).toBeInTheDocument();
   });
 });

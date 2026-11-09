@@ -27,19 +27,40 @@ export interface FacebookSettings {
   page_name: string | null;
 }
 
+export type YouTubePrivacy = "public" | "unlisted" | "private";
+
+export interface YouTubeSettings {
+  /** The user's own Google Cloud OAuth client (the client secret is a secret). */
+  client_id: string | null;
+  /** Filled in by logging in with Google. */
+  channel_id: string | null;
+  channel_title: string | null;
+  /** Defaults for every upload. */
+  privacy: YouTubePrivacy;
+  made_for_kids: boolean;
+  category_id: string;
+  tags: string[];
+}
+
 export type SecretName =
   | "telegram_bot_token"
   | "telegram_api_hash"
   | "telegram_session"
   | "facebook_app_secret"
-  | "facebook_page_token";
-/** Sessions and page tokens come from login flows, never typed in. */
-export type WritableSecret = Exclude<SecretName, "telegram_session" | "facebook_page_token">;
+  | "facebook_page_token"
+  | "youtube_client_secret"
+  | "youtube_refresh_token";
+/** Sessions and tokens come from login flows, never typed in. */
+export type WritableSecret = Exclude<
+  SecretName,
+  "telegram_session" | "facebook_page_token" | "youtube_refresh_token"
+>;
 
 export interface Settings {
   language: Language;
   telegram: TelegramSettings;
   facebook: FacebookSettings;
+  youtube: YouTubeSettings;
   /** Only whether each secret is set; values never leave the backend. */
   secrets: Record<SecretName, boolean>;
 }
@@ -48,6 +69,7 @@ export interface SettingsPatch {
   language?: Language;
   telegram?: Partial<TelegramSettings>;
   facebook?: { app_id?: string | null };
+  youtube?: Partial<Omit<YouTubeSettings, "channel_id" | "channel_title">>;
 }
 
 /**
@@ -218,3 +240,34 @@ export const cancelFacebookLogin = () =>
   request<FacebookLoginStatus>(`${FB_LOGIN}/cancel`, { method: "POST" });
 export const logoutFacebook = () =>
   request<FacebookLoginStatus>(`${FB_LOGIN}/logout`, { method: "POST" });
+
+/** Logging in with Google for YouTube: the browser opens, Google sends the user back. */
+export type YouTubeLoginState = "logged_out" | "waiting" | "logged_in";
+
+export interface YouTubeLoginStatus {
+  state: YouTubeLoginState;
+  channel: { id: string; title: string } | null;
+  /** Why the last attempt failed (an `errors.<code>` key). */
+  error: string | null;
+}
+
+const YT_LOGIN = "/api/youtube/account";
+export const fetchYouTubeLogin = () => request<YouTubeLoginStatus>(YT_LOGIN);
+export const startYouTubeLogin = () =>
+  request<YouTubeLoginStatus>(`${YT_LOGIN}/login`, { method: "POST" });
+export const cancelYouTubeLogin = () =>
+  request<YouTubeLoginStatus>(`${YT_LOGIN}/cancel`, { method: "POST" });
+export const logoutYouTube = () =>
+  request<YouTubeLoginStatus>(`${YT_LOGIN}/logout`, { method: "POST" });
+
+/** Duration and frame size of a local file (read on this computer, nothing is uploaded). */
+export interface VideoInfo {
+  duration_seconds: number | null;
+  width: number | null;
+  height: number | null;
+  /** Vertical or square and up to 3 minutes; null when unknown. */
+  youtube_short: boolean | null;
+}
+
+export const fetchVideoInfo = (path: string) =>
+  request<VideoInfo>(`/api/publications/video-info?path=${encodeURIComponent(path)}`);
